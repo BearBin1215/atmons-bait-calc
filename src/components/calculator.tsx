@@ -1007,71 +1007,69 @@ export default function Calculator() {
           </CardContent>
         </Card>
 
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("scenario.title")}</CardTitle>
-              <CardDescription>{t("scenario.description")}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-1.5">
-                <Label>{t("scenario.biome")}</Label>
-                <BiomeSelector
-                  biomes={biomeOptions}
-                  selected={biomeId}
-                  onSelect={setBiomeId}
-                  tagsByBiome={data.biomeTagReverse}
-                />
-                {resolvedBiomeTags.length > 0 ? (
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">
-                      {t("scenario.tags", { count: resolvedBiomeTags.length })}
-                    </p>
-                    <div className="flex flex-wrap gap-1">
-                      {resolvedBiomeTags.map((tag) => (
-                        <Badge key={tag} variant="secondary">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("scenario.title")}</CardTitle>
+            <CardDescription>{t("scenario.description")}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>{t("scenario.biome")}</Label>
+              <BiomeSelector
+                biomes={biomeOptions}
+                selected={biomeId}
+                onSelect={setBiomeId}
+                tagsByBiome={data.biomeTagReverse}
+              />
+              {resolvedBiomeTags.length > 0 ? (
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">
+                    {t("scenario.tags", { count: resolvedBiomeTags.length })}
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {resolvedBiomeTags.map((tag) => (
+                      <Badge key={tag} variant="secondary">
+                        {tag}
+                      </Badge>
+                    ))}
                   </div>
-                ) : (
-                  <p className="text-xs text-destructive">{t("scenario.tagsEmpty")}</p>
-                )}
-              </div>
+                </div>
+              ) : (
+                <p className="text-xs text-destructive">{t("scenario.tagsEmpty")}</p>
+              )}
+            </div>
 
-              <div className="space-y-1.5">
-                <Label>{t("scenario.light")}</Label>
-                <OptionGroup
-                  values={LIGHT_VALUES}
-                  labelPrefix="light"
-                  isActive={(v) => light === v}
-                  onToggle={setLight}
-                />
-              </div>
+            <div className="space-y-1.5">
+              <Label>{t("scenario.light")}</Label>
+              <OptionGroup
+                values={LIGHT_VALUES}
+                labelPrefix="light"
+                isActive={(v) => light === v}
+                onToggle={setLight}
+              />
+            </div>
 
-              <div className="space-y-1.5">
-                <Label>{t("scenario.weather")}</Label>
-                <OptionGroup
-                  values={WEATHER_VALUES}
-                  labelPrefix="weather"
-                  isActive={(v) => weather === v}
-                  onToggle={setWeather}
-                />
-              </div>
+            <div className="space-y-1.5">
+              <Label>{t("scenario.weather")}</Label>
+              <OptionGroup
+                values={WEATHER_VALUES}
+                labelPrefix="weather"
+                isActive={(v) => weather === v}
+                onToggle={setWeather}
+              />
+            </div>
 
-              <div className="space-y-1.5">
-                <Label>{t("scenario.position")}</Label>
-                <OptionGroup
-                  values={POSITION_VALUES}
-                  labelPrefix="position"
-                  isActive={(v) => posTypes.includes(v)}
-                  onToggle={togglePosType}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            <div className="space-y-1.5">
+              <Label>{t("scenario.position")}</Label>
+              <OptionGroup
+                values={POSITION_VALUES}
+                labelPrefix="position"
+                isActive={(v) => posTypes.includes(v)}
+                onToggle={togglePosType}
+              />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <LureSummaryCard lure={lure} labels={labels} />

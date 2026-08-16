@@ -96,6 +96,25 @@ function fmtPct(value: number): string {
   return `${value.toFixed(value < 1 ? 3 : 2)}%`;
 }
 
+/**
+ * 格式化概率为高精度百分比字符串（最多 12 位有效数字，去除尾随零）。
+ * Java（Cobblemon 源码）与 JS 均为 IEEE 754 双精度浮点（约 15~17 位有效数字），
+ * 且 calc.ts 按源码同序复刻运算，取 12 位有效数字足以覆盖有意义的精度；
+ * 极小值自动退化为科学计数法（如 4e-8%）。
+ */
+function fmtPctPrecise(value: number): string {
+  if (value === 0) {
+    return "0%";
+  }
+  let text = Math.abs(value).toPrecision(12);
+  if (text.includes("e")) {
+    text = text.replace(/\.?0+e/, "e");
+  } else {
+    text = text.replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
+  }
+  return [value < 0 ? "-" : "", text, "%"].join("");
+}
+
 /** 格式化概率倍率：无倍率显示 —，≥100 倍视为无穷显示 ∞ */
 function fmtRatio(ratio: number | null): string {
   if (ratio === null) {
@@ -628,6 +647,26 @@ function SortHeader({
 }
 
 /**
+ * 概率数值文本：常规按 fmtPct 截断显示，悬浮始终显示高精度值（fmtPctPrecise），
+ * 以虚线下划线提示可悬浮（如 0.00004% 显示为 0.000%，悬浮可见精确值）。
+ */
+function ProbText({ value }: { value: number }) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger
+          render={<span />}
+          className="cursor-help underline decoration-dotted underline-offset-4"
+        >
+          {fmtPct(value)}
+        </TooltipTrigger>
+        <TooltipContent>{fmtPctPrecise(value)}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+/**
  * 影响结果表格：场景标题与汇总统计、名称筛选与稀有度筛选、
  * 可排序列（名称 / 稀有度 / 基础概率 / 吸引后概率）与各物种影响明细。
  */
@@ -810,10 +849,10 @@ function ImpactTable({
                         {s.buckets.map((b) => t(`rarity.${b}`)).join(bucketSeparator)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {fmtPct(s.pBefore)}
+                        <ProbText value={s.pBefore} />
                       </TableCell>
                       <TableCell className="text-right font-medium tabular-nums">
-                        {fmtPct(s.pAfter)}
+                        <ProbText value={s.pAfter} />
                       </TableCell>
                       <TableCell
                         className={cn(

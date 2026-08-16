@@ -31,6 +31,9 @@ All The Mons 宝点心概率计算器，部署于 GitHub Pages（BearBin1215/atm
 - 默认数据目录为 `../cobblemon`（相对本工程），可通过环境变量覆盖：`COBBLEMON_DATA_DIR`、`COBBLEMON_OVERRIDES_DIR`、`COBBLEMON_LANG_FILE`
 - 数据格式为多语言：`species.json` / `materials.json` 使用 `names: { zh, en }`；`labels.json` 使用 `types / stats / eggGroups: { zh, en }`
 - 数据更新：修改脚本后运行 `pnpm extract:all-the-mons` 重新生成
+- 树果物品图标（`public/icons/berries/<物品id>.png`，16x16）为手动复制的静态资源，来源为本地 Cobblemon 仓库 `../cobblemon/cobblemon/common/src/main/resources/assets/cobblemon/textures/item/berries/`；新增树果材料时需从该目录手动复制对应 png（MPL-2.0，与 `poke_snack.png` 同源）
+- 非树果物品图标（`public/icons/items/<物品id>.<png|gif>`，原版物品为主）同样为手动复制的静态资源，来源为 Minecraft Wiki 的 Invicon 图（allthemodium 苹果/胡萝卜来自 AllTheMods/AllTheModium 仓库）；新增时需在 `calculator.tsx` 的 `ITEM_ICON_EXTS` 中登记（默认扩展名 png，其余如 gif 需注明）；图标在材料芯片与已选槽位中显示（`materialIconUrl`）
+- 调料（kind=seasoning，如神话桃桃果）暂无图标，不显示
 
 ## 多语言
 
@@ -98,6 +101,8 @@ src/
 └── index.css              # Tailwind v4 入口（仅浅色模式）
 public/
 ├── data/                 # 抓取生成的数据（bait-effects、materials、species、spawn-pool、biome-tags-reverse、labels、meta）
+├── icons/berries/        # 树果物品图标（手动从 Cobblemon 仓库复制，见「数据来源」）
+├── icons/items/          # 非树果物品图标（手动从 Minecraft Wiki 复制，见「数据来源」）
 ├── poke_snack.png         # 站点图标（来自 Cobblemon 模组，MPL-2.0 许可）
 └── ICON_LICENSE.txt       # 图标许可声明
 scripts/

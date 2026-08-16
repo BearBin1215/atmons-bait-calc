@@ -153,6 +153,53 @@ function TypeChip({ type, label }: { type: string; label: string }) {
   );
 }
 
+/** kind=item 且配有物品图标的材料 -> 图片扩展名（文件位于 public/icons/items/，未列出的 item 无图标） */
+const ITEM_ICON_EXTS: Record<string, string> = {
+  allthemodium_apple: "png",
+  allthemodium_carrot: "png",
+  apple: "png",
+  enchanted_golden_apple: "gif",
+  glistering_melon_slice: "png",
+  glow_berries: "png",
+  golden_apple: "png",
+  golden_carrot: "png",
+  sweet_berries: "png",
+};
+
+/** 图标静态资源根（public/icons/，随站点部署不经过构建处理） */
+const ICONS_BASE = `${import.meta.env.BASE_URL}icons/`;
+
+/**
+ * 材料物品图标 URL：
+ * - 树果 -> public/icons/berries/<物品id>.png（全部树果均有，来源 Cobblemon 仓库）
+ * - 其他物品 -> public/icons/items/<物品id>.<ext>（仅 ITEM_ICON_EXTS 列出的材料有）
+ * - 调料（如神话桃桃果）与未列出的整合包物品暂无图标，返回 null
+ */
+function materialIconUrl(material: MaterialInfo): string | null {
+  const itemName = material.id.slice(material.kind.length + 1);
+  if (material.kind === "berry") {
+    return [ICONS_BASE, "berries/", itemName, ".png"].join("");
+  }
+  const extension = material.kind === "item" ? (ITEM_ICON_EXTS[itemName] ?? null) : null;
+  return extension ? [ICONS_BASE, "items/", itemName, ".", extension].join("") : null;
+}
+
+/** 材料图标（16px 显示，像素风格外观保留） */
+function MaterialIcon({ material }: { material: MaterialInfo }) {
+  const url = materialIconUrl(material);
+  if (!url) {
+    return null;
+  }
+  return (
+    <img
+      src={url}
+      alt=""
+      loading="lazy"
+      className="size-4 shrink-0 [image-rendering:pixelated]"
+    />
+  );
+}
+
 /**
  * 材料选择面板：搜索框 + 已选槽位 + 按显示分类分组的可选材料芯片。
  * 搜索同时匹配中英文名、id 与口味值；基础点数类材料按常用能力值顺序排列。
@@ -236,6 +283,7 @@ function MaterialSelector({
                 onClick={() => onRemoveAt(index)}
                 className="flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-primary bg-primary/10 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-primary/20"
               >
+                {material && <MaterialIcon material={material} />}
                 {material?.names[locale]}
                 <span aria-hidden="true" className="text-muted-foreground">
                   ×
@@ -284,13 +332,14 @@ function MaterialSelector({
                     <button
                       type="button"
                       disabled={full && !active}
-                      onClick={() => onAdd(m.id)}
-                      className={cn(
-                        "cursor-pointer rounded-md border px-2.5 py-1 text-xs transition-colors",
-                        chipClass,
-                      )}
-                    >
-                      {m.names[locale]}
+                       onClick={() => onAdd(m.id)}
+                       className={cn(
+                         "inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs transition-colors",
+                         chipClass,
+                       )}
+                     >
+                       <MaterialIcon material={m} />
+                       {m.names[locale]}
                       {suffix && <span className="text-muted-foreground">·{suffix}</span>}
                       {count > 1 && ` ×${count}`}
                     </button>

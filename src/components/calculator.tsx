@@ -353,14 +353,18 @@ function MaterialSelector({
                       disabled={full && !active}
                        onClick={() => onAdd(m.id)}
                        className={cn(
-                         "inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs transition-colors",
+                         "inline-flex cursor-pointer items-center gap-1 rounded-md border px-2.5 py-1 text-xs transition-colors",
                          chipClass,
                        )}
                      >
-                       <MaterialIcon material={m} />
-                       {m.names[locale]}
-                      {suffix && <span className="text-muted-foreground">·{suffix}</span>}
-                      {count > 1 && ` ×${count}`}
+                      <MaterialIcon material={m} />
+                      <span>
+                        {m.names[locale]}
+                        {suffix && (
+                          <span className="text-muted-foreground">·{suffix}</span>
+                        )}
+                        {count > 1 && ` ×${count}`}
+                      </span>
                     </button>
                   );
                   const otherEffects =

@@ -30,6 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   Tooltip,
   TooltipContent,
@@ -380,39 +381,42 @@ function BiomeSelector({
 }
 
 /**
- * 场景选项按钮组（光照 / 天气单选、生成位置多选），
+ * 场景单选按钮组（光照 / 天气），基于 ToggleGroup 单值模式。
+ * ToggleGroup 点击已选项会取消选中（值变空数组），
+ * 光照 / 天气必须始终有一项选中，故忽略空数组。
  * 按钮文案由 i18n 字典的 `<prefix>.<value>` 键提供。
  */
 function OptionGroup<T extends string>({
   values,
   labelPrefix,
-  isActive,
-  onToggle,
+  selected,
+  onSelect,
 }: {
   /** 选项值列表 */
   values: readonly T[];
-  /** i18n 键前缀（light / weather / position） */
+  /** i18n 键前缀（light / weather） */
   labelPrefix: string;
-  /** 判断选项是否激活 */
-  isActive: (value: T) => boolean;
-  /** 切换选项 */
-  onToggle: (value: T) => void;
+  /** 当前选中值 */
+  selected: T;
+  /** 选中变化回调 */
+  onSelect: (value: T) => void;
 }) {
   const { t } = useTranslation();
   return (
-    <div className="flex flex-wrap gap-2">
+    <ToggleGroup
+      value={[selected]}
+      onValueChange={(nextValues) => {
+        if (nextValues.length > 0) {
+          onSelect(nextValues[0] as T);
+        }
+      }}
+    >
       {values.map((value) => (
-        <Button
-          key={value}
-          type="button"
-          size="sm"
-          variant={isActive(value) ? "default" : "outline"}
-          onClick={() => onToggle(value)}
-        >
+        <ToggleGroupItem key={value} value={value} variant="outline" size="sm">
           {t(`${labelPrefix}.${value}`)}
-        </Button>
+        </ToggleGroupItem>
       ))}
-    </div>
+    </ToggleGroup>
   );
 }
 
@@ -634,12 +638,6 @@ function ImpactTable({
     });
   }, [impact, nameQuery, rarityFilter, sort, namesById, locale]);
 
-  const toggleRarity = (value: string) => {
-    setRarityFilter((prev) =>
-      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value],
-    );
-  };
-
   const setSortKey = (key: SortKey) => {
     setSort((prev) =>
       prev.key === key
@@ -671,19 +669,24 @@ function ImpactTable({
             onChange={(e) => setNameQuery(e.target.value)}
             className="h-8 w-40"
           />
-          <div className="flex flex-wrap gap-1">
+          <ToggleGroup
+            multiple
+            value={rarityFilter}
+            onValueChange={(values) => setRarityFilter(values)}
+            className="gap-1"
+          >
             {RARITY_VALUES.map((value) => (
-              <Button
+              <ToggleGroupItem
                 key={value}
-                type="button"
-                size="xs"
-                variant={rarityFilter.includes(value) ? "default" : "outline"}
-                onClick={() => toggleRarity(value)}
+                value={value}
+                variant="outline"
+                size="sm"
+                className="h-7 px-3"
               >
                 {t(`rarity.${value}`)}
-              </Button>
+              </ToggleGroupItem>
             ))}
-          </div>
+          </ToggleGroup>
         </div>
 
         {impact.species.length === 0 ? (
@@ -956,13 +959,6 @@ export default function Calculator() {
     setSelected((prev) => prev.filter((_, i) => i !== index));
   };
 
-  /** 切换生成位置类型的勾选状态 */
-  const togglePosType = (value: string) => {
-    setPosTypes((prev) =>
-      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value],
-    );
-  };
-
   return (
     <div className="space-y-4">
       <p className="text-sm">
@@ -1049,8 +1045,8 @@ export default function Calculator() {
               <OptionGroup
                 values={LIGHT_VALUES}
                 labelPrefix="light"
-                isActive={(v) => light === v}
-                onToggle={setLight}
+                selected={light}
+                onSelect={setLight}
               />
             </div>
 
@@ -1059,19 +1055,24 @@ export default function Calculator() {
               <OptionGroup
                 values={WEATHER_VALUES}
                 labelPrefix="weather"
-                isActive={(v) => weather === v}
-                onToggle={setWeather}
+                selected={weather}
+                onSelect={setWeather}
               />
             </div>
 
             <div className="space-y-1.5">
               <Label>{t("scenario.position")}</Label>
-              <OptionGroup
-                values={POSITION_VALUES}
-                labelPrefix="position"
-                isActive={(v) => posTypes.includes(v)}
-                onToggle={togglePosType}
-              />
+              <ToggleGroup
+                multiple
+                value={posTypes}
+                onValueChange={(values) => setPosTypes(values)}
+              >
+                {POSITION_VALUES.map((value) => (
+                  <ToggleGroupItem key={value} value={value} variant="outline" size="sm">
+                    {t(`position.${value}`)}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
             </div>
           </CardContent>
         </Card>

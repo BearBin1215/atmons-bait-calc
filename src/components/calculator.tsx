@@ -820,12 +820,8 @@ export default function Calculator() {
   const [biomeId, setBiomeId] = useState("minecraft:plains");
   const [light, setLight] = useState<LightRange>("day");
   const [weather, setWeather] = useState<Weather>("clear");
-  const [posTypes, setPosTypes] = useState<string[]>([
-    "grounded",
-    "surface",
-    "submerged",
-    "seafloor",
-  ]);
+  /** 生成位置（单选：宝点心周围地形同时存在多种时，应分次计算） */
+  const [posType, setPosType] = useState<string>("grounded");
 
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -873,8 +869,8 @@ export default function Calculator() {
   );
 
   const scenario: Scenario = useMemo(
-    () => ({ biomeTags: resolvedBiomeTags, light, weather, posTypes }),
-    [resolvedBiomeTags, light, weather, posTypes],
+    () => ({ biomeTags: resolvedBiomeTags, light, weather, posTypes: [posType] }),
+    [resolvedBiomeTags, light, weather, posType],
   );
 
   const lure = useMemo(
@@ -1062,17 +1058,12 @@ export default function Calculator() {
 
             <div className="space-y-1.5">
               <Label>{t("scenario.position")}</Label>
-              <ToggleGroup
-                multiple
-                value={posTypes}
-                onValueChange={(values) => setPosTypes(values)}
-              >
-                {POSITION_VALUES.map((value) => (
-                  <ToggleGroupItem key={value} value={value} variant="outline" size="sm">
-                    {t(`position.${value}`)}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
+              <OptionGroup
+                values={POSITION_VALUES}
+                labelPrefix="position"
+                selected={posType}
+                onSelect={setPosType}
+              />
             </div>
           </CardContent>
         </Card>

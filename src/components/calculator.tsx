@@ -982,7 +982,7 @@ export default function Calculator() {
 
   if (!data || !lure || !impact) {
     return (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="flex justify-center h-20 items-center gap-2 text-sm text-muted-foreground">
         <Spinner />
         {t("page.loading")}
       </div>

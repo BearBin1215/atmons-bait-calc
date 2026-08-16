@@ -7,6 +7,9 @@ import { defineConfig } from "vite";
 export default defineConfig({
   base: "/atmons-bait-calc/",
   plugins: [react(), tailwindcss()],
+  build: {
+    chunkSizeWarningLimit: 800,
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "./src"),

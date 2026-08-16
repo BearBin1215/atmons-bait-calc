@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation, Trans } from "react-i18next";
 import { HelpCircleIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,14 @@ import { Empty, EmptyDescription, EmptyTitle } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
 import {
   Table,
   TableBody,
@@ -50,7 +58,7 @@ import {
   WEATHER_VALUES,
 } from "@/lib/labels";
 import { loadAllTheMonsData } from "@/lib/loader";
-import type { AllTheMonsData, MaterialInfo } from "@/lib/types";
+import type { AllTheMonsData, MaterialInfo, SpawnBait } from "@/lib/types";
 
 /** 材料槽位上限（对应游戏内烹饪锅的调料槽数量） */
 const MAX_MATERIALS = 3;
@@ -153,6 +161,7 @@ function MaterialSelector({
   selected,
   maxCount,
   labels,
+  baitEffects,
   onAdd,
   onRemoveAt,
   onClear,
@@ -162,6 +171,8 @@ function MaterialSelector({
   maxCount: number;
   /** 当前语言的标签映射（用于材料后缀） */
   labels: UiLabels;
+  /** 效果数据（「其他」分类材料悬浮显示效果明细） */
+  baitEffects: Record<string, SpawnBait>;
   onAdd: (id: string) => void;
   onRemoveAt: (index: number) => void;
   onClear: () => void;
@@ -187,112 +198,131 @@ function MaterialSelector({
   const slots = Array.from({ length: maxCount }, (_, i) => selected[i] ?? null);
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <Input
-          placeholder={t("material.placeholder")}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1"
-        />
-        <Button variant="outline" size="sm" onClick={onClear}>
-          {t("material.clear", { count: selected.length, max: maxCount })}
-        </Button>
-      </div>
+    <TooltipProvider>
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder={t("material.placeholder")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1"
+          />
+          <Button variant="outline" size="sm" onClick={onClear}>
+            {t("material.clear", { count: selected.length, max: maxCount })}
+          </Button>
+        </div>
 
-      <div className="flex flex-wrap gap-2">
-        {slots.map((id, index) => {
-          const material = id ? materials.find((m) => m.id === id) : null;
-          return (
-            <div
-              key={index}
-              className={cn(
-                "flex h-9 items-center gap-1.5 rounded-md border px-2.5 text-xs",
-                id
-                  ? "border-primary bg-primary/10 font-medium text-foreground"
-                  : "border-dashed border-muted-foreground/40 text-muted-foreground",
-              )}
-            >
-              {material
-                ? material.names[locale]
-                : t("material.emptySlot", { index: index + 1 })}
-              {id && (
-                <button
-                  type="button"
-                  aria-label={t("material.remove", {
-                    name: material?.names[locale] ?? "",
-                  })}
-                  onClick={() => onRemoveAt(index)}
-                  className="text-muted-foreground hover:text-foreground"
+        <div className="flex flex-wrap gap-2">
+          {slots.map((id, index) => {
+            const material = id ? materials.find((m) => m.id === id) : null;
+            if (!id) {
+              return (
+                <div
+                  key={index}
+                  className="flex h-9 items-center rounded-md border border-dashed border-muted-foreground/40 px-2.5 text-xs text-muted-foreground"
                 >
+                  {t("material.emptySlot", { index: index + 1 })}
+                </div>
+              );
+            }
+            return (
+              <button
+                key={index}
+                type="button"
+                aria-label={t("material.remove", {
+                  name: material?.names[locale] ?? "",
+                })}
+                onClick={() => onRemoveAt(index)}
+                className="flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-primary bg-primary/10 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-primary/20"
+              >
+                {material?.names[locale]}
+                <span aria-hidden="true" className="text-muted-foreground">
                   ×
-                </button>
-              )}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <p className="text-xs text-muted-foreground">{t("material.hint")}</p>
+
+        {MATERIAL_CATEGORY_ORDER.map((category) => {
+          let list = groups[category];
+          if (!list || list.length === 0) {
+            return null;
+          }
+          if (category === "ev") {
+            list = [...list].sort(
+              (a, b) =>
+                (EV_STAT_ORDER[a.detail[0] ?? ""] ?? 99) -
+                (EV_STAT_ORDER[b.detail[0] ?? ""] ?? 99),
+            );
+          }
+          return (
+            <div key={category} className="space-y-1.5">
+              <div className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                {t(`materialCategory.${category}`)}
+                {t("materialCategory.count", { count: list.length })}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {list.map((m) => {
+                  const count = selected.filter((id) => id === m.id).length;
+                  const active = count > 0;
+                  const full = selected.length >= maxCount;
+                  const suffix = materialSuffix(m, labels);
+                  let chipClass =
+                    "border-border bg-card/40 text-muted-foreground hover:bg-secondary/50 hover:text-foreground";
+                  if (active) {
+                    chipClass =
+                      "border-primary bg-primary/15 font-medium text-foreground";
+                  } else if (full) {
+                    chipClass =
+                      "cursor-not-allowed border-border bg-card/20 text-muted-foreground/40";
+                  }
+                  const chip = (
+                    <button
+                      type="button"
+                      disabled={full && !active}
+                      onClick={() => onAdd(m.id)}
+                      className={cn(
+                        "cursor-pointer rounded-md border px-2.5 py-1 text-xs transition-colors",
+                        chipClass,
+                      )}
+                    >
+                      {m.names[locale]}
+                      {suffix && <span className="text-muted-foreground">·{suffix}</span>}
+                      {count > 1 && ` ×${count}`}
+                    </button>
+                  );
+                  const otherEffects =
+                    m.category === "other" ? (baitEffects[m.baitId]?.effects ?? []) : [];
+                  if (otherEffects.length === 0) {
+                    return <Fragment key={m.id}>{chip}</Fragment>;
+                  }
+                  return (
+                    <Tooltip key={m.id}>
+                      <TooltipTrigger render={<span />}>{chip}</TooltipTrigger>
+                      <TooltipContent className="block space-y-1">
+                        {otherEffects.map((effect, i) => (
+                          <div key={i}>
+                            {t(`effect.${effect.type}`)}
+                            {effect.value > 0 && ` ×${effect.value}`}
+                          </div>
+                        ))}
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })}
+              </div>
             </div>
           );
         })}
       </div>
-
-      <p className="text-xs text-muted-foreground">{t("material.hint")}</p>
-
-      {MATERIAL_CATEGORY_ORDER.map((category) => {
-        let list = groups[category];
-        if (!list || list.length === 0) {
-          return null;
-        }
-        if (category === "ev") {
-          list = [...list].sort(
-            (a, b) =>
-              (EV_STAT_ORDER[a.detail[0] ?? ""] ?? 99) -
-              (EV_STAT_ORDER[b.detail[0] ?? ""] ?? 99),
-          );
-        }
-        return (
-          <div key={category} className="space-y-1.5">
-            <div className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-              {t(`materialCategory.${category}`)}
-              {t("materialCategory.count", { count: list.length })}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {list.map((m) => {
-                const count = selected.filter((id) => id === m.id).length;
-                const active = count > 0;
-                const full = selected.length >= maxCount;
-                const suffix = materialSuffix(m, labels);
-                let chipClass =
-                  "border-border bg-card/40 text-muted-foreground hover:bg-secondary/50 hover:text-foreground";
-                if (active) {
-                  chipClass = "border-primary bg-primary/15 font-medium text-foreground";
-                } else if (full) {
-                  chipClass =
-                    "cursor-not-allowed border-border bg-card/20 text-muted-foreground/40";
-                }
-                return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    disabled={full && !active}
-                    onClick={() => onAdd(m.id)}
-                    className={cn(
-                      "rounded-md border px-2.5 py-1 text-xs transition-colors",
-                      chipClass,
-                    )}
-                  >
-                    {m.names[locale]}
-                    {suffix && <span className="text-muted-foreground">·{suffix}</span>}
-                    {count > 1 && ` ×${count}`}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
-    </div>
+    </TooltipProvider>
   );
 }
 
-/** 群系单选列表：支持按名称或 #标签 搜索 */
+/** 群系选择：可搜索下拉（按名称过滤，#标签 按群系标签过滤） */
 function BiomeSelector({
   biomes,
   selected,
@@ -305,53 +335,43 @@ function BiomeSelector({
   tagsByBiome: Record<string, string[]>;
 }) {
   const { t } = useTranslation();
-  const [search, setSearch] = useState("");
-  const keyword = search.trim().toLowerCase();
-
-  const filtered = useMemo(() => {
-    if (!keyword) {
-      return biomes;
-    }
-    if (keyword.startsWith("#")) {
-      const tagKw = keyword.slice(1);
-      return biomes.filter((b) =>
-        (tagsByBiome[b] ?? []).some((tag) => tag.toLowerCase().includes(tagKw)),
-      );
-    }
-    return biomes.filter((b) => b.toLowerCase().includes(keyword));
-  }, [biomes, keyword, tagsByBiome]);
 
   return (
     <div className="space-y-2">
-      <Input
-        placeholder={t("biome.placeholder")}
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="h-8"
-      />
-      <div className="max-h-56 space-y-0.5 overflow-y-auto border border-border/50 p-2">
-        {filtered.map((b) => {
-          const active = b === selected;
-          return (
-            <label
-              key={b}
-              className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 text-sm hover:bg-secondary/40"
-            >
-              <input
-                type="radio"
-                name="biome"
-                checked={active}
-                onChange={() => onSelect(b)}
-                className="size-4 accent-primary"
-              />
-              <span className="truncate">{b}</span>
-            </label>
-          );
-        })}
-        {filtered.length === 0 && (
-          <p className="text-xs text-muted-foreground">{t("biome.empty")}</p>
-        )}
-      </div>
+      <Combobox
+        items={biomes}
+        value={selected}
+        onValueChange={(value) => {
+          if (value) {
+            onSelect(value);
+          }
+        }}
+        filter={(biome, query) => {
+          const q = query.trim().toLowerCase();
+          if (!q) {
+            return true;
+          }
+          if (q.startsWith("#")) {
+            const tagKw = q.slice(1);
+            return (tagsByBiome[biome] ?? []).some((tag) =>
+              tag.toLowerCase().includes(tagKw),
+            );
+          }
+          return biome.toLowerCase().includes(q);
+        }}
+      >
+        <ComboboxInput placeholder={t("biome.placeholder")} className="w-full" />
+        <ComboboxContent>
+          <ComboboxEmpty>{t("biome.empty")}</ComboboxEmpty>
+          <ComboboxList>
+            {(biome) => (
+              <ComboboxItem key={biome} value={biome} className="truncate">
+                {biome}
+              </ComboboxItem>
+            )}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
       <p className="text-xs text-muted-foreground">
         {t("biome.count", { count: biomes.length })}
       </p>
@@ -423,7 +443,7 @@ function LureSummaryCard({
   }
 
   const typingHint = (
-    <TooltipProvider delay={300}>
+    <TooltipProvider>
       <Tooltip>
         <TooltipTrigger className="inline-flex size-4 cursor-help items-center justify-center text-muted-foreground/70 transition-colors outline-none hover:text-foreground">
           <HelpCircleIcon className="size-3.5" />
@@ -560,16 +580,12 @@ function SortHeader({
  */
 function ImpactTable({
   impact,
-  scenario,
   selectedCount,
-  biomeName,
   labels,
   namesById,
 }: {
   impact: ImpactResult;
-  scenario: Scenario;
   selectedCount: number;
-  biomeName: string;
   /** 当前语言的标签映射 */
   labels: UiLabels;
   /** 物种 id -> 当前语言名称（由数据文件派生） */
@@ -637,12 +653,6 @@ function ImpactTable({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>
-          {t("table.scenario", {
-            biome: biomeName,
-            tags: scenario.biomeTags.length,
-          })}
-        </CardTitle>
         <CardDescription>
           {t("table.summary", {
             total: impact.summary.totalSpecies,
@@ -994,6 +1004,7 @@ export default function Calculator() {
               selected={selected}
               maxCount={MAX_MATERIALS}
               labels={labels}
+              baitEffects={data.baitEffects}
               onAdd={addMaterial}
               onRemoveAt={removeSlot}
               onClear={() => setSelected([])}
@@ -1070,9 +1081,7 @@ export default function Calculator() {
 
       <ImpactTable
         impact={impact}
-        scenario={scenario}
         selectedCount={selected.length}
-        biomeName={biomeId}
         labels={labels}
         namesById={namesById}
       />

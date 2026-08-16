@@ -48,7 +48,7 @@ i18n.use(initReactI18next).init({
         "material.emptySlot": "空槽位 {{index}}",
         "material.remove": "移除 {{name}}",
         "material.hint":
-          "点击材料会加入下一个空槽位，重复点击可重复添加；用槽位上的 × 移除。",
+          "点击材料会加入下一个空槽位，重复点击可重复添加；点击已选槽位即可移除。",
 
         "biome.placeholder": "搜索群系 id 或 #标签…（如 plains / #is_forest）",
         "biome.empty": "无匹配群系",
@@ -86,7 +86,6 @@ i18n.use(initReactI18next).init({
         "table.change": "变化",
         "table.baitMatch": "命中吸引",
         "table.bucketSeparator": "、",
-        "table.scenario": "场景：{{biome}}（解析 {{tags}} 个刷新标签）",
         "table.summary":
           "场景内共 {{total}} 种宝可梦{{note}}。上升 {{up}}，下降 {{down}}，其中 {{blocked}} 被基础点数过滤。",
         "table.summaryBaseNote": "（未选择材料，以下为基础刷新概率）",
@@ -170,7 +169,7 @@ i18n.use(initReactI18next).init({
         "material.emptySlot": "Empty slot {{index}}",
         "material.remove": "Remove {{name}}",
         "material.hint":
-          "Click a material to add it to the next empty slot; click repeatedly to add more. Remove with the × on each slot.",
+          "Click a material to add it to the next empty slot; click repeatedly to add more. Click a selected slot to remove it.",
 
         "biome.placeholder": "Search biome id or #tag… (e.g. plains / #is_forest)",
         "biome.empty": "No matching biomes",
@@ -211,7 +210,6 @@ i18n.use(initReactI18next).init({
         "table.change": "Change",
         "table.baitMatch": "Snack Match",
         "table.bucketSeparator": ", ",
-        "table.scenario": "Scenario: {{biome}} ({{tags}} spawn tags resolved)",
         "table.summary":
           "{{total}} Pokémon in this scenario{{note}}. {{up}} boosted, {{down}} reduced, {{blocked}} filtered by EV.",
         "table.summaryBaseNote": " (no materials selected — base spawn rates shown)",

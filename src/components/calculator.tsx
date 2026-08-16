@@ -488,13 +488,7 @@ function LureSummaryCard({
               {t("lure.rarityBoost")}
             </div>
             <p className="text-sm">
-              <Trans
-                i18nKey="lure.rarityBoostText"
-                values={{ tier: lure.rarityTier }}
-                components={{
-                  tier: <Badge variant="secondary" />,
-                }}
-              />
+              {t("lure.rarityBoostText", { tier: lure.rarityTier })}
             </p>
           </div>
         )}

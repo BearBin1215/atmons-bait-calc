@@ -68,8 +68,7 @@ i18n.use(initReactI18next).init({
         "lure.description":
           "合并后的效果。属性 / 蛋组吸引会提高对应宝可梦的权重，基础点数筛选只保留匹配的宝可梦。",
         "lure.rarityBoost": "稀有度等级提升",
-        "lure.rarityBoostText":
-          "稀有度等级 +<tier>{{tier}}</tier> 级，稀有度桶权重被拉平（高稀有宝可梦相对更容易出现）。",
+        "lure.rarityBoostText": "稀有度等级 +{{tier}} 级",
         "lure.trigger": "（触发 {{chance}}%）",
         "lure.group.typing": "属性吸引",
         "lure.typingHint": "仅第一个属性效果生效，其余属性吸引不参与权重计算。",
@@ -102,7 +101,7 @@ i18n.use(initReactI18next).init({
 
         "algo.title": "算法说明",
         "algo.model":
-          "概率模型：先按宝点心桶权重（common 83.25 / uncommon 11.25 / rare 4.125 / ultra-rare 1.375）加权选桶，再在桶内按条目权重加权选择，最后按物种汇总。若材料含 rarity_bucket 效果，桶权重会先取 w^(1/n) 并归一到 100。",
+          "概率模型：先按宝点心桶权重（common 83.25 / uncommon 11.25 / rare 4.125 / ultra-rare 1.375）加权选桶，再在桶内按条目权重加权选择，最后按物种汇总。若材料含 rarity_bucket 效果，桶权重会先取 w^(1/n) 并归一到 100，使稀有度桶被拉平、高稀有宝可梦相对更容易出现。",
         "algo.slots":
           "材料最多 {{max}} 个槽位（对应游戏中烹饪锅的调料槽），可重复放置，相同材料效果会叠加合并；槽位顺序影响「首个」属性 / 基础点数效果。",
         "algo.source":
@@ -192,8 +191,7 @@ i18n.use(initReactI18next).init({
         "lure.description":
           "Combined effects. Type / Egg Group attraction boosts the spawn weight of matching Pokémon; EV filtering keeps only matching Pokémon.",
         "lure.rarityBoost": "Rarity Bucket Boost",
-        "lure.rarityBoostText":
-          "Rarity Bucket +<tier>{{tier}}</tier> tier: rarity bucket weights are flattened (rarer Pokémon appear relatively more often).",
+        "lure.rarityBoostText": "Rarity Bucket +{{tier}} tier",
         "lure.trigger": "(triggers {{chance}}% of the time)",
         "lure.group.typing": "Type Attraction",
         "lure.typingHint":
@@ -229,7 +227,7 @@ i18n.use(initReactI18next).init({
 
         "algo.title": "Algorithm Notes",
         "algo.model":
-          "Probability model: a bucket is first selected by Poké Snack bucket weights (common 83.25 / uncommon 11.25 / rare 4.125 / ultra-rare 1.375), then an entry is chosen by weight within the bucket, and results are aggregated by species. With rarity_bucket effects, bucket weights are transformed with w^(1/n) and normalized to 100.",
+          "Probability model: a bucket is first selected by Poké Snack bucket weights (common 83.25 / uncommon 11.25 / rare 4.125 / ultra-rare 1.375), then an entry is chosen by weight within the bucket, and results are aggregated by species. With rarity_bucket effects, bucket weights are transformed with w^(1/n) and normalized to 100, flattening the rarity buckets so rarer Pokémon appear relatively more often.",
         "algo.slots":
           'Up to {{max}} material slots (matching the in-game cooking pot seasoning slots); duplicates merge additively, and slot order determines the "first" type / EV effect.',
         "algo.source":

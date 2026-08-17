@@ -18,22 +18,13 @@ All The Mons 宝点心概率计算器，部署于 GitHub Pages（BearBin1215/atm
 
 - 如果用户提出的需求或设计较为笼统，有多个方案可以使用，**列出方案让用户选择**
 
-## 视觉综述
-
-- base-sera 风格：组件库默认无圆角（rounded-none）、大写、宽字距；页顶标题、表头等已按需移除 `uppercase` / `tracking-wider`，需要时用 `normal-case` 覆盖
-- **无暗色模式**：已删除主题切换与 `.dark` 样式，禁止引入 `dark:` 前缀工具类，站点固定浅色显示
-- 顶部固定 Header：左侧标题 + 站点图标，右侧语言切换下拉 + GitHub 仓库链接
-- 使用响应式布局兼容移动端
-
 ## 数据来源
 
-- 静态数据由 `scripts/extract-all-the-mons.ts` 从本地 Cobblemon 仓库抓取生成到 `public/data/`（7 个 JSON，为 Cobblemon 基础数据 + All The Mons 覆盖数据的合并快照）
-- 默认数据目录为 `../cobblemon`（相对本工程），可通过环境变量覆盖：`COBBLEMON_DATA_DIR`、`COBBLEMON_OVERRIDES_DIR`、`COBBLEMON_LANG_FILE`
+- 静态数据运行 `pnpm extract:all-the-mons` 生成，由 `scripts/extract-all-the-mons.ts` 从本地 Cobblemon 仓库抓取生成到 `public/data/`（7 个 JSON，为 Cobblemon 基础数据 + All The Mons 覆盖数据的合并快照）
+- 数据来源工作区根目录默认为 `../cobblemon`（相对本工程，其下包含 `cobblemon` 模组源码仓库与 `All-the-Mons` 整合包仓库），可通过环境变量 `COBBLEMON_ROOT` 覆盖；数据 / 语言 / 版本文件路径均由该根目录派生
 - 数据格式为多语言：`species.json` / `materials.json` 使用 `names: { zh, en }`；`labels.json` 使用 `types / stats / eggGroups: { zh, en }`
-- 数据更新：修改脚本后运行 `pnpm extract:all-the-mons` 重新生成
-- 树果物品图标（`public/icons/berries/<物品id>.png`，16x16）为手动复制的静态资源，来源为本地 Cobblemon 仓库 `../cobblemon/cobblemon/common/src/main/resources/assets/cobblemon/textures/item/berries/`；新增树果材料时需从该目录手动复制对应 png（MPL-2.0，与 `poke_snack.png` 同源）
-- 非树果物品图标（`public/icons/items/<物品id>.<png|gif>`，原版物品为主）同样为手动复制的静态资源，来源为 Minecraft Wiki 的 Invicon 图（allthemodium 苹果/胡萝卜来自 AllTheMods/AllTheModium 仓库）；新增时需在 `calculator.tsx` 的 `ITEM_ICON_EXTS` 中登记（默认扩展名 png，其余如 gif 需注明）；图标在材料芯片与已选槽位中显示（`materialIconUrl`）
-- 调料（kind=seasoning，如神话桃桃果）暂无图标，不显示
+- 树果物品图标（`public/icons/berries/<物品id>.png`）为静态资源，来源为 Cobblemon 仓库
+- 非树果物品图标（`public/icons/items/<物品id>.<png|gif>`，原版物品为主）为静态资源，来源为 Minecraft Wiki、AllTheMods/AllTheModium 仓库等来源，新增时需在 `calculator.tsx` 的 `ITEM_ICON_EXTS` 中登记，默认扩展名 png，其余如 gif 需注明
 
 ## 多语言
 
@@ -43,13 +34,13 @@ All The Mons 宝点心概率计算器，部署于 GitHub Pages（BearBin1215/atm
   - 句子内嵌 React 元素（如链接）-> react-i18next 的 `Trans` 组件，翻译串内用 `<name>...</name>` 占位，语序由翻译串完全控制
   - 数据内名称（宝可梦、材料、属性、能力值、蛋群）-> 从数据文件按当前 locale 解析，zh 缺失回退 en
 - 新增语言只需两处：`i18n.ts` 加键值、`LOCALE_LABELS` 加显示名
-- `lib/labels.ts` 只放语言无关内容（颜色、排序、选项值列表），**禁止添加翻译文本**
+- `lib/labels.ts` 只放语言无关内容（颜色、排序、选项值列表），禁止添加翻译文本
 - 新引入的可见文案必须走 i18n（`t()` / `Trans`）或数据多语言字段，禁止硬编码单语言
 
 ## 与旧工程的同步约定
 
-- 本工程与 BearBin1215.github.io（博客）共享数据抓取脚本与数据层：
-  - `scripts/extract-all-the-mons.ts` 两工程完全一致
+- 本工程与 BearBin1215.github.io 共享数据抓取脚本与数据层：
+  - `scripts/extract-all-the-mons.ts` 两工程核心逻辑一致
   - `src/lib/` 下的 `types.ts`、`loader.ts`、`calc.ts` 与旧工程 `src/pages/toys/all-the-mons/` 对应文件保持一致
   - `public/data/` 数据由同一脚本生成
 - 修改脚本或数据格式时，需同步更新旧工程并运行其测试（旧工程测试位于 `test/`，命令 `pnpm test:run`）
@@ -87,7 +78,12 @@ pnpm dlx shadcn@latest add 组件名
 ```text
 src/
 ├── components/
-│   ├── calculator.tsx     # 计算器主页面（序言、材料选择、场景设置、结果表格）
+│   ├── calculator.tsx     # 计算器主组件（数据加载、状态维护、Card 外壳与页面组装）
+│   ├── shared.tsx         # 各区块共享的 UiLabels、格式化工具、分类标签解析
+│   ├── material-selector.tsx  # 材料选择面板（含材料图标解析 ITEM_ICON_EXTS / materialIconUrl）
+│   ├── scenario-settings.tsx  # 场景设置内容（群系 / 光照 / 天气 / 生成位置）
+│   ├── lure-summary.tsx   # 吸引效果摘要内容
+│   ├── impact-table.tsx   # 影响结果表格内容（筛选、排序、物种明细）
 │   └── ui/                # shadcn/ui 组件（badge、button、card、dropdown-menu、empty、input、label、spinner、table、tooltip）
 ├── lib/
 │   ├── calc.ts            # 概率计算核心（复刻 Cobblemon 源码机制）
@@ -101,13 +97,13 @@ src/
 └── index.css              # Tailwind v4 入口（仅浅色模式）
 public/
 ├── data/                 # 抓取生成的数据（bait-effects、materials、species、spawn-pool、biome-tags-reverse、labels、meta）
-├── icons/berries/        # 树果物品图标（手动从 Cobblemon 仓库复制，见「数据来源」）
-├── icons/items/          # 非树果物品图标（手动从 Minecraft Wiki 复制，见「数据来源」）
-├── poke_snack.png         # 站点图标（来自 Cobblemon 模组，MPL-2.0 许可）
-└── ICON_LICENSE.txt       # 图标许可声明
+├── icons/berries/        # 树果物品图标（手动添加，见「数据来源」）
+├── icons/items/          # 非树果物品图标（手动添加，见「数据来源」）
+├── poke_snack.png        # 站点图标（来自 Cobblemon 模组，MPL-2.0 许可）
+└── ICON_LICENSE.txt      # 图标许可声明
 scripts/
 └── extract-all-the-mons.ts  # 数据抓取脚本（与旧工程完全一致）
-.github/workflows/deploy.yml  # push main 自动构建部署到 GitHub Pages
+.github/workflows/deploy.yml # push main 自动构建部署到 GitHub Pages
 ```
 
 ## 代码规范
@@ -117,9 +113,4 @@ scripts/
 - 多次使用的变量、通用组件、工具函数都应有对应的jsdoc注释，复杂逻辑需要描述逻辑
 - 接口定义的每个属性都要有对应jsdoc注释，除非是 id/key 等唯一标识符等一眼能看出含义的属性
 - 代码修改后，不要注释说明这里曾经是什么样，只说明最新代码（除非要提醒开发者不要使用废弃方案）
-- 每次涉及ts的代码修改后运行 `pnpm typecheck` 和 `pnpm lint` 检查类型和规范错误
-
-### 其他约定
-
-- 站点图标 `poke_snack.png` 版权属 Cobblemon 贡献者（MPL-2.0），替换图标时同步更新 `ICON_LICENSE.txt`
-- shadcn 组件的 base-sera 默认样式（uppercase 等）在生成后按需调整；修改 shadcn 生成代码后同样要过 lint 与 typecheck
+- 每次涉及ts的代码修改后运行 `pnpm typecheck`、`pnpm lint`、`pnpm format` 检查类型和规范错误

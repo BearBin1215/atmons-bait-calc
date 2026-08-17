@@ -35,7 +35,7 @@ function BackToTop() {
       type="button"
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       className={cn(
-        "fixed right-4 bottom-4 z-50 inline-flex size-9 items-center justify-center rounded-none border bg-background text-muted-foreground shadow-sm transition-opacity outline-none hover:bg-muted hover:text-foreground",
+        "fixed right-4 bottom-4 z-50 inline-flex size-9 cursor-pointer items-center justify-center rounded-none border bg-background text-muted-foreground shadow-sm transition-opacity outline-none hover:bg-muted hover:text-foreground",
         visible ? "opacity-100" : "pointer-events-none opacity-0",
       )}
     >
@@ -64,7 +64,7 @@ function App() {
         </h1>
         <div className="flex items-center gap-3">
           <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex size-9 shrink-0 items-center justify-center rounded-none text-muted-foreground transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30">
+            <DropdownMenuTrigger className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-none text-muted-foreground transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30">
               <Languages className="size-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -87,7 +87,8 @@ function App() {
             href="https://github.com/BearBin1215/atmons-bait-calc"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-muted-foreground transition-colors hover:text-foreground"
+            aria-label="GitHub"
+            className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-none text-muted-foreground transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
           >
             <SiGithub className="size-5" />
           </a>

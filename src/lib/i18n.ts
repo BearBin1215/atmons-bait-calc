@@ -66,17 +66,10 @@ i18n.use(initReactI18next).init({
         "lure.title": "吸引效果摘要",
         "lure.empty": "尚未选择材料。",
         "lure.description":
-          "合并后的效果。属性 / 蛋组吸引会提高对应宝可梦的权重，基础点数筛选只保留匹配的宝可梦。",
-        "lure.rarityBoost": "稀有度等级提升",
-        "lure.rarityBoostText": "稀有度等级 +{{tier}} 级",
+          "合并后的效果。属性 / 蛋群吸引会提高对应宝可梦的权重，基础点数筛选只保留匹配的宝可梦。",
         "lure.trigger": "（触发 {{chance}}%）",
-        "lure.group.typing": "属性吸引",
         "lure.typingHint": "仅第一个属性效果生效，其余属性吸引不参与权重计算。",
-        "lure.group.eggGroup": "蛋群吸引",
-        "lure.group.ev": "基础点数筛选",
-        "lure.group.evNote": "只保留对应能力有基础点数的宝可梦，其余权重归 0。",
-        "lure.group.biteTime": "上钩时间",
-        "lure.group.quality": "个体质量加成",
+        "lure.evNote": "只保留对应能力有基础点数的宝可梦，其余权重归 0。",
 
         "table.name": "宝可梦",
         "table.type": "属性",
@@ -123,7 +116,7 @@ i18n.use(initReactI18next).init({
 
         "effect.cobblemon:typing": "属性吸引",
         "effect.cobblemon:egg_group": "蛋群吸引",
-        "effect.cobblemon:ev": "基础点数筛选",
+        "effect.cobblemon:ev": "基础点数",
         "effect.cobblemon:rarity_bucket": "稀有度等级提升",
         "effect.cobblemon:bite_time": "上钩时间",
         "effect.cobblemon:nature": "性格",
@@ -189,18 +182,11 @@ i18n.use(initReactI18next).init({
         "lure.empty": "No materials selected yet.",
         "lure.description":
           "Combined effects. Type / Egg Group attraction boosts the spawn weight of matching Pokémon; EV filtering keeps only matching Pokémon.",
-        "lure.rarityBoost": "Rarity Bucket Boost",
-        "lure.rarityBoostText": "Rarity Bucket +{{tier}} tier",
         "lure.trigger": "(triggers {{chance}}% of the time)",
-        "lure.group.typing": "Type Attraction",
         "lure.typingHint":
           "Only the first type effect applies; other type attractions do not affect spawn weights.",
-        "lure.group.eggGroup": "Egg Group Attraction",
-        "lure.group.ev": "EV Filter",
-        "lure.group.evNote":
+        "lure.evNote":
           "Only Pokémon that yield EVs in the matching stat are kept; others get zero weight.",
-        "lure.group.biteTime": "Bite Time",
-        "lure.group.quality": "Quality Effects",
 
         "table.name": "Pokémon",
         "table.type": "Type",
@@ -249,7 +235,7 @@ i18n.use(initReactI18next).init({
 
         "effect.cobblemon:typing": "Type Attraction",
         "effect.cobblemon:egg_group": "Egg Group Attraction",
-        "effect.cobblemon:ev": "EV Yield Filter",
+        "effect.cobblemon:ev": "EVs",
         "effect.cobblemon:rarity_bucket": "Rarity Bucket Boost",
         "effect.cobblemon:bite_time": "Bite Time",
         "effect.cobblemon:nature": "Nature",

@@ -118,7 +118,7 @@ export function ImpactTable({
   const { t, i18n } = useTranslation();
   const locale = normalizeLocale(i18n.language);
   const [nameQuery, setNameQuery] = useState("");
-  const [rarityFilter, setRarityFilter] = useState<string[]>([...RARITY_VALUES]);
+  const [rarityFilter, setRarityFilter] = useState<string[]>(["ultra-rare", "rare"]);
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({
     key: "rarity",
     dir: "asc",
@@ -269,7 +269,7 @@ export function ImpactTable({
                       {s.buckets.map((b) => t(`rarity.${b}`)).join(bucketSeparator)}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      <ProbText value={s.pBefore} />
+                      {fmtPct(s.pBefore)}
                     </TableCell>
                     <TableCell className="text-right font-medium tabular-nums">
                       <ProbText value={s.pAfter} />

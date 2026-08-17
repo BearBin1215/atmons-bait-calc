@@ -1,5 +1,5 @@
 /**
- * All The Mons 静态数据的懒加载与缓存。
+ * All the Mons 静态数据的懒加载与缓存。
  * 数据由 scripts/extract-all-the-mons.ts 生成到 public/data/。
  */
 import type {
@@ -28,7 +28,7 @@ async function loadJson<T>(name: string): Promise<T> {
 }
 
 /**
- * 加载全部 All The Mons 静态数据并组装为 AllTheMonsData。
+ * 加载全部 All the Mons 静态数据并组装为 AllTheMonsData。
  * 返回同一 Promise，可安全并发调用。
  */
 export function loadAllTheMonsData(): Promise<AllTheMonsData> {

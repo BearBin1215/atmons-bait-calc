@@ -6,4 +6,4 @@ Full MPL-2.0 text: https://mozilla.org/MPL/2.0/
 The files public/icons/items/allthemodium_apple.png and public/icons/items/allthemodium_carrot.png
 are sourced from the AllTheMods/AllTheModium repository (https://github.com/AllTheMods/AllTheModium),
 which declares no explicit open-source license; copyright belongs to the AllTheMods team.
-They are used here only as references to items within the All The Mons modpack.
+They are used here only as references to items within the All the Mons modpack.

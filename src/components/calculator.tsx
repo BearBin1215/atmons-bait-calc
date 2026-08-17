@@ -186,7 +186,7 @@ export default function Calculator() {
           components={{
             atm: extLink(
               "https://www.curseforge.com/minecraft/modpacks/all-the-mons",
-              "All The Mons",
+              "All the Mons",
             ),
             cobblemon: extLink(
               "https://www.curseforge.com/minecraft/mc-mods/cobblemon",

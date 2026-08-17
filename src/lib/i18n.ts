@@ -33,12 +33,12 @@ i18n.use(initReactI18next).init({
   resources: {
     zh: {
       translation: {
-        "header.title": "All The Mons 宝点心概率计算",
+        "header.title": "All the Mons 宝点心概率计算",
         "intro.description":
           "计算 <atm/> 整合包中，不同树果 / 材料搭配制作的宝点心在指定场景下对宝可梦刷新的影响。计算逻辑复刻自 <cobblemon/> 模组。",
         "intro.version": "（对应版本 All the Mons {{atm}} / Cobblemon {{cobblemon}}）",
         "intro.snapshot":
-          "数据快照生成于 {{time}}{{version}}，已合并 All The Mons 的 材料与生成池覆盖（如 ATM苹果、ATM胡萝卜及神兽/幻兽生成条目）。共 {{species}} 种宝可梦、{{pool}} 条生成池条目、{{materials}} 种材料。",
+          "数据快照生成于 {{time}}{{version}}，已合并 All the Mons 的 材料与生成池覆盖（如 ATM苹果、ATM胡萝卜及神兽/幻兽生成条目）。共 {{species}} 种宝可梦、{{pool}} 条生成池条目、{{materials}} 种材料。",
 
         "material.title": "材料选择",
         "material.description":
@@ -99,7 +99,7 @@ i18n.use(initReactI18next).init({
         "algo.source":
           "属性吸引与基础点数筛选只取「第一个」对应效果（与材料选择顺序有关）；蛋组吸引遍历全部蛋组效果。各材料自带的 weightMultiplier（时间/天气修正）与 drops 在本工具中未纳入。",
         "algo.data":
-          "数据合并自 Cobblemon 源码与 All The Mons 数据包覆盖（材料与生成池）；结果反映的是相对刷新概率变化，未模拟实际的生成频率（每区块数量、生成周期等）。",
+          "数据合并自 Cobblemon 源码与 All the Mons 数据包覆盖（材料与生成池）；结果反映的是相对刷新概率变化，未模拟实际的生成频率（每区块数量、生成周期等）。",
         "algo.aiNote": "注：英文版内容除模组自带文本外均由 AI 翻译。",
 
         "rarity.common": "普通",
@@ -146,13 +146,13 @@ i18n.use(initReactI18next).init({
     },
     en: {
       translation: {
-        "header.title": "All The Mons Poké Snack Calculator",
+        "header.title": "All the Mons Poké Snack Calculator",
 
         "intro.description":
           "Calculate how Poké Snacks made from different berry / material combinations in the <atm/> modpack affect Pokémon spawns in a given scenario. The calculation logic is replicated from the <cobblemon/> mod.",
         "intro.version": "(for All the Mons {{atm}} / Cobblemon {{cobblemon}})",
         "intro.snapshot":
-          "Data snapshot generated on {{time}} {{version}}, merged with All The Mons material and spawn pool overrides (e.g. ATM Apple, ATM Carrot and legendary/mythical spawn entries). {{species}} Pokémon, {{pool}} spawn pool entries, {{materials}} materials in total.",
+          "Data snapshot generated on {{time}} {{version}}, merged with All the Mons material and spawn pool overrides (e.g. ATM Apple, ATM Carrot and legendary/mythical spawn entries). {{species}} Pokémon, {{pool}} spawn pool entries, {{materials}} materials in total.",
 
         "material.title": "Material Selection",
         "material.description":
@@ -217,7 +217,7 @@ i18n.use(initReactI18next).init({
         "algo.source":
           'Type attraction and EV filtering use only the "first" matching effect (material order matters); Egg Group attraction iterates all egg group effects. Each material\'s own weightMultiplier (time/weather modifiers) and drops are not included.',
         "algo.data":
-          "Data is merged from Cobblemon source and All The Mons datapack overrides (materials and spawn pools). Results reflect relative spawn probability changes, not actual spawn frequency (per-chunk counts, spawn cycles, etc.).",
+          "Data is merged from Cobblemon source and All the Mons datapack overrides (materials and spawn pools). Results reflect relative spawn probability changes, not actual spawn frequency (per-chunk counts, spawn cycles, etc.).",
         "algo.aiNote":
           "Note: English content other than the text shipped with the mod is AI-translated.",
 

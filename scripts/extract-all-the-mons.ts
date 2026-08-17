@@ -6,7 +6,7 @@
  *
  * 数据来源（默认）：
  *   ../cobblemon/cobblemon/common/src/main/resources/data/cobblemon
- * 并自动合并 All The Mons 整合包覆盖（../cobblemon/All-the-Mons/kubejs/data/cobblemon）：
+ * 并自动合并 All the Mons 整合包覆盖（../cobblemon/All-the-Mons/kubejs/data/cobblemon）：
  *   材料（spawn_bait_effects / seasonings）、生成池（spawn_pool_world）
  * 可通过环境变量 COBBLEMON_ROOT 覆盖工作区根目录（默认 ../cobblemon，
  * 其下应包含 cobblemon 模组源码仓库与 All-the-Mons 整合包仓库），
@@ -16,7 +16,7 @@
  *   bait-effects.json  baitId -> { item, effects[] }
  *   materials.json     可选材料列表（含多语言 names 与 category / detail 分类）
  *   species.json       [{ id, names{zh,en}, types[], eggGroups[], evYield{} }]
- *   spawn-pool.json    世界生成池条目（已合并 All The Mons 覆盖）
+ *   spawn-pool.json    世界生成池条目（已合并 All the Mons 覆盖）
  *   biome-tags-reverse.json  群系 id -> 所属标签列表（含原版/Common 标签与神兽刷新标签）
  *   labels.json        界面标签翻译（属性 / 能力值 / 蛋群，zh / en）
  *   meta.json          生成时间、版本号与统计信息
@@ -43,7 +43,7 @@ const LANG_FILE = join(COBBLEMON_RESOURCES, "assets/cobblemon/lang/zh_cn.json");
 const EN_LANG_FILE = resolve(dirname(LANG_FILE), "en_us.json");
 const OUT_DIR = resolve(PROJECT_ROOT, "public/data");
 
-/** All The Mons 源码仓库 CHANGELOG.md（解析最新版本号） */
+/** All the Mons 源码仓库 CHANGELOG.md（解析最新版本号） */
 const ATM_CHANGELOG = join(COBBLEMON_ROOT, "All-the-Mons/CHANGELOG.md");
 /** Cobblemon 模组 gradle.properties（mod_version） */
 const COBBLEMON_GRADLE_PROPERTIES = join(COBBLEMON_ROOT, "cobblemon/gradle.properties");
@@ -551,7 +551,7 @@ const EFFECT_TYPE_TO_CATEGORY: Record<string, MaterialCategory> = {
   "cobblemon:ev": "ev",
 };
 
-/** 读取 All The Mons 与 Cobblemon 版本号 */
+/** 读取 All the Mons 与 Cobblemon 版本号 */
 function loadVersions(): { allTheMons: string | null; cobblemon: string | null } {
   let allTheMons: string | null = null;
   // 从 CHANGELOG.md 解析最新的「## [版本号]」标题
@@ -1009,7 +1009,7 @@ function parseWeightMultipliers(raw: unknown): WeightMultiplierRaw[] {
  * 收集所有命名空间下的生物群系标签定义（tags/worldgen/biome/**），
  * 返回 标签（#ns:path）-> 成员列表（含嵌套标签与具体群系 id）。
  * dataRoots 为数据根目录（包含 <namespace>/tags/worldgen/biome 结构），
- * 例如 cobblemon 的 resources/data 与 All The Mons 的 kubejs/data。
+ * 例如 cobblemon 的 resources/data 与 All the Mons 的 kubejs/data。
  */
 function loadBiomeTagContents(dataRoots: string[]): Record<string, string[]> {
   const map = new Map<string, string[]>();
@@ -1243,7 +1243,7 @@ function main(): void {
   const seasonings = loadSeasonings(DATA_DIR, overridesDir);
   const species = loadSpecies(DATA_DIR, lang);
   const spawnPool = loadSpawnPool(DATA_DIR, overridesDir);
-  // 群系标签内容：基础模组（cobblemon 命名空间）+ All The Mons 数据包根目录
+  // 群系标签内容：基础模组（cobblemon 命名空间）+ All the Mons 数据包根目录
   const overridesDataRoot = overridesDir ? resolve(overridesDir, "..") : null;
   const biomeTagContents = loadBiomeTagContents(
     [resolve(DATA_DIR, ".."), overridesDataRoot].filter((d): d is string => d !== null),

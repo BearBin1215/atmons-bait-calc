@@ -1,5 +1,5 @@
 /**
- * All The Mons 宝点心（Poke Snack / Lure）吸引计算的数据类型定义。
+ * All the Mons 宝点心（Poke Snack / Lure）吸引计算的数据类型定义。
  * 对应源码数据：spawn_bait_effects、berries、seasonings、species、spawn_pool_world。
  */
 

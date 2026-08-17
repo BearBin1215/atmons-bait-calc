@@ -1,6 +1,6 @@
 ## 项目概述
 
-All The Mons 宝点心概率计算器，部署于 GitHub Pages（BearBin1215/atmons-bait-calc）。
+All the Mons 宝点心概率计算器，部署于 GitHub Pages（BearBin1215/atmons-bait-calc）。
 
 ## 技术栈
 
@@ -20,7 +20,7 @@ All The Mons 宝点心概率计算器，部署于 GitHub Pages（BearBin1215/atm
 
 ## 数据来源
 
-- 静态数据运行 `pnpm extract:all-the-mons` 生成，由 `scripts/extract-all-the-mons.ts` 从本地 Cobblemon 仓库抓取生成到 `public/data/`（7 个 JSON，为 Cobblemon 基础数据 + All The Mons 覆盖数据的合并快照）
+- 静态数据运行 `pnpm extract:all-the-mons` 生成，由 `scripts/extract-all-the-mons.ts` 从本地 Cobblemon 仓库抓取生成到 `public/data/`（7 个 JSON，为 Cobblemon 基础数据 + All the Mons 覆盖数据的合并快照）
 - 数据来源工作区根目录默认为 `../cobblemon`（相对本工程，其下包含 `cobblemon` 模组源码仓库与 `All-the-Mons` 整合包仓库），可通过环境变量 `COBBLEMON_ROOT` 覆盖；数据 / 语言 / 版本文件路径均由该根目录派生
 - 数据格式为多语言：`species.json` / `materials.json` 使用 `names: { zh, en }`；`labels.json` 使用 `types / stats / eggGroups: { zh, en }`
 - 树果物品图标（`public/icons/berries/<物品id>.png`）为静态资源，来源为 Cobblemon 仓库

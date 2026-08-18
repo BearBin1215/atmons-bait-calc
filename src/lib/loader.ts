@@ -42,6 +42,7 @@ export function loadAllTheMonsData(): Promise<AllTheMonsData> {
         biomeTagReverse,
         labels,
         meta,
+        blockFeatures,
       ] = await Promise.all([
         loadJson<Record<string, SpawnBait>>("bait-effects.json"),
         loadJson<MaterialInfo[]>("materials.json"),
@@ -50,6 +51,7 @@ export function loadAllTheMonsData(): Promise<AllTheMonsData> {
         loadJson<Record<string, string[]>>("biome-tags-reverse.json"),
         loadJson<LabelsData>("labels.json"),
         loadJson<AllTheMonsMeta>("meta.json"),
+        loadJson<Record<string, string[]>>("block-features.json"),
       ]);
 
       const species: Record<string, SpeciesInfo> = {};
@@ -65,6 +67,7 @@ export function loadAllTheMonsData(): Promise<AllTheMonsData> {
         biomeTagReverse,
         labels,
         meta,
+        blockFeatures,
       };
     })().catch((err) => {
       // 加载失败时清空缓存，允许重试

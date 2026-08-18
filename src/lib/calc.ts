@@ -17,6 +17,7 @@ import type {
   AllTheMonsData,
   MaterialInfo,
   PoolEntry,
+  SpawnConditionSnapshot,
   SpeciesInfo,
   WeightMultiplier,
 } from "./types";
@@ -102,13 +103,117 @@ function getMaterialEffects(material: MaterialInfo, data: AllTheMonsData): BaitE
   return data.baitEffects[material.baitId]?.effects ?? [];
 }
 
-/** 场景光照范围 */
-export type LightRange = "all" | "day" | "night";
+/** 时段：按 Cobblemon 内置 TimeRange 与条目时段求交集 */
+export type TimeOfDay = "day" | "dusk" | "night";
+
+/** 标准 Minecraft 维度 id；天空光层是否存在由维度类型决定 */
+export type DimensionId = "minecraft:overworld" | "minecraft:the_nether" | "minecraft:the_end";
 
 /** 场景天气 */
 export type Weather = "clear" | "rain" | "thunder";
 
-/** 计算场景（选择生物群系 + 光照 + 天气 + 生成位置） */
+/** 天空可见性：决定 canSeeSky 假设（露天 / 不露天） */
+export type SkyVisibility = "open" | "sheltered";
+
+/** 高度范围：决定 Y 区间假设（低处 / 高处 / 不限） */
+export type HeightRange = "low" | "high" | "any";
+
+/**
+ * 天空暴露度：决定静态天空光照（LightLayer.SKY，与昼夜无关）区间假设。
+ * 天空光照反映位置能接收到多少天空光：露天恒 15，随深度/遮挡 flood-fill 衰减。
+ */
+export type SkyExposure = "open" | "semi" | "closed";
+
+/** 环境亮度：对应 Cobblemon SpawnablePosition.light */
+export type LocalLightRange = "bright" | "dim" | "dark";
+
+/** 月相：当前月相假设（满月 / 渐亏 / 新月 / 渐盈 / 不限） */
+export type MoonPhase = "full" | "waning" | "new" | "waxing" | "any";
+
+/** 是否在史莱姆区块 */
+export type SlimeChunk = "yes" | "no";
+
+/** 各天空可见性假定的 canSeeSky 值 */
+const SKY_VISIBILITIES: Record<SkyVisibility, { seesSky: boolean }> = {
+  open: { seesSky: true },
+  sheltered: { seesSky: false },
+};
+
+/** 各高度范围假定的 Y 区间（Y 用区间重叠判定，null=不限制） */
+const HEIGHT_RANGES: Record<HeightRange, { minY: number | null; maxY: number | null }> = {
+  // 低处覆盖地下至海平面（主世界常见生成）；高处覆盖海平面以上（山顶 / 高空）
+  low: { minY: -64, maxY: 63 },
+  high: { minY: 64, maxY: 320 },
+  any: { minY: null, maxY: null },
+};
+
+/** 各天空暴露度假定的天空光照区间（有天空光维度，0~15） */
+const SKY_EXPOSURES: Record<SkyExposure, { minSkyLight: number; maxSkyLight: number }> = {
+  // 露天恒 15；其余位置按 flood-fill 衰减；无天空光为 0
+  open: { minSkyLight: 15, maxSkyLight: 15 },
+  semi: { minSkyLight: 1, maxSkyLight: 14 },
+  closed: { minSkyLight: 0, maxSkyLight: 0 },
+};
+
+/** 各环境亮度范围假定的区间（0~15，与条目区间用重叠判定） */
+const LOCAL_LIGHT_RANGES: Record<LocalLightRange, { minLight: number; maxLight: number }> = {
+  bright: { minLight: 8, maxLight: 15 },
+  dim: { minLight: 1, maxLight: 7 },
+  dark: { minLight: 0, maxLight: 0 },
+};
+
+/** Vanilla DimensionType.hasSkylight：主世界为 true，下界和末地为 false。 */
+const DIMENSIONS_WITH_SKY_LIGHT = new Set<DimensionId>(["minecraft:overworld"]);
+
+/** Cobblemon 1.8.0 TimeRange.kt 的内置 tick 区间。 */
+const COBBLEMON_TIME_RANGES: Record<string, readonly (readonly [number, number])[]> = {
+  any: [[0, 23999]],
+  day: [
+    [23460, 23999],
+    [0, 12541],
+  ],
+  night: [[12542, 23459]],
+  morning: [
+    [23000, 23999],
+    [0, 4999],
+  ],
+  noon: [[5000, 6999]],
+  afternoon: [[7000, 12999]],
+  evening: [[13000, 16999]],
+  midnight: [[17000, 18999]],
+  predawn: [[19000, 22999]],
+  dawn: [
+    [22300, 23999],
+    [0, 166],
+  ],
+  dusk: [[11834, 13701]],
+  twilight: [
+    [11834, 13701],
+    [22300, 23999],
+    [0, 166],
+  ],
+};
+
+/** 界面时段直接复用对应的 Cobblemon 内置区间。 */
+const SCENARIO_TIME_RANGES: Record<TimeOfDay, readonly (readonly [number, number])[]> = {
+  day: COBBLEMON_TIME_RANGES.day,
+  dusk: COBBLEMON_TIME_RANGES.dusk,
+  night: COBBLEMON_TIME_RANGES.night,
+};
+
+/**
+ * 各月相分组对应的月相编号（Minecraft：0 满月 → 1-3 渐亏 → 4 新月 → 5-7 渐盈）。
+ * 条目 moonPhases 与所选分组的编号集合有交集即通过。
+ */
+const MOON_PHASE_GROUPS: Record<MoonPhase, readonly number[]> = {
+  full: [0],
+  waning: [1, 2, 3],
+  new: [4],
+  waxing: [5, 6, 7],
+  any: [0, 1, 2, 3, 4, 5, 6, 7],
+};
+
+/** 计算场景（选择生物群系 + 光照 + 天气 + 生成位置 + 环境/结构） */
 export interface Scenario {
   /**
    * 生物群系标签列表，如 ["#cobblemon:is_jungle", "#cobblemon:is_overworld"]。
@@ -116,12 +221,41 @@ export interface Scenario {
    * 反向条件命中任一标签即排除（取并集）。
    */
   biomeTags: readonly string[];
-  /** 光照范围：all 全部 / day 白天(8-15) / night 夜晚(0-7) */
-  light: LightRange;
+  /** 时段：按 Cobblemon 内置 tick 区间与条目 timeRange 求交集 */
+  timeOfDay: TimeOfDay;
+  /** 标准维度 id；决定是否存在天空光层，也用于 dimensions 条件 */
+  dimension: DimensionId;
   /** 天气：clear 晴 / rain 雨 / thunder 雷暴 */
   weather: Weather;
   /** 包含的生成位置类型 */
   posTypes: readonly string[];
+  /**
+   * 附近存在的特殊方块特征 id 列表（用户声明，如 redstone / amethyst）。
+   * 条目 requiredNearby 列表内任一命中。
+   */
+  features: readonly string[];
+  /**
+   * 脚下基底方块特征 id 列表（用户声明）。
+   * 条目 requiredBase 列表内任一命中；natural 基底由界面默认传入。
+   */
+  baseFeatures: readonly string[];
+  /**
+   * 天空可见性（露天 / 不露天）：决定 canSeeSky 假设。
+   * 选中结构时，结构匹配条目的 canSeeSky 由结构内部决定，不受环境假设限制。
+   */
+  sky: SkyVisibility;
+  /** 高度范围（低处 / 高处 / 不限）：决定 Y 区间假设 */
+  height: HeightRange;
+  /** 天空暴露度（露天 / 半遮蔽 / 封闭）：决定静态天空光照区间假设 */
+  skyExposure: SkyExposure;
+  /** 环境亮度（明亮 / 昏暗 / 无）：对应 SpawnablePosition.light */
+  localLight: LocalLightRange;
+  /** 月相（满月 / 渐亏 / 新月 / 渐盈 / 不限）：决定月相编号集合假设 */
+  moonPhase: MoonPhase;
+  /** 是否在史莱姆区块（是 / 否） */
+  slimeChunk: SlimeChunk;
+  /** 所在结构 id/tag（null=普通地形，不在结构中） */
+  structure: string | null;
 }
 
 /** 天气是否为「下雨」（雨或雷暴） */
@@ -299,36 +433,169 @@ export function computeSpeciesWeight(
   };
 }
 
-/** 判断光照条件是否兼容 */
-function lightCompatible(entry: PoolEntry, light: LightRange): boolean {
-  if (light === "all") {
+/** 判断两个闭区间是否有交集。场景选项表示一组可能位置，因此使用存在性判断。 */
+function rangesOverlap(aMin: number, aMax: number, bMin: number, bMax: number): boolean {
+  return aMin <= bMax && aMax >= bMin;
+}
+
+/** 将一个条件对象的时间范围与场景时段做存在性匹配。 */
+function timeRangeMatches(timeRange: string | null | undefined, timeOfDay: TimeOfDay): boolean {
+  if (!timeRange || timeRange === "any") {
     return true;
   }
-  const range: [number, number] = light === "day" ? [8, 15] : [0, 7];
-  const [min, max] = range;
-  const lo = entry.minLight ?? 0;
-  const hi = entry.maxLight ?? 15;
-  return lo <= max && hi >= min;
+  const entryRanges = COBBLEMON_TIME_RANGES[timeRange];
+  if (!entryRanges) {
+    return false;
+  }
+  return entryRanges.some(([entryMin, entryMax]) =>
+    SCENARIO_TIME_RANGES[timeOfDay].some(([scenarioMin, scenarioMax]) =>
+      rangesOverlap(entryMin, entryMax, scenarioMin, scenarioMax),
+    ),
+  );
+}
+
+/** 由条目字段构造统一条件快照，供正条件与反条件使用同一套判定。 */
+function entryCondition(entry: PoolEntry): SpawnConditionSnapshot {
+  return {
+    biomes: entry.biomes,
+    minSkyLight: entry.minSkyLight,
+    maxSkyLight: entry.maxSkyLight,
+    minLocalLight: entry.minLocalLight,
+    maxLocalLight: entry.maxLocalLight,
+    timeRange: entry.timeRange,
+    moonPhases: entry.moonPhases,
+    slimeChunk: entry.slimeChunk,
+    isRaining: entry.isRaining,
+    isThundering: entry.isThundering,
+    canSeeSky: entry.canSeeSky,
+    minY: entry.minY,
+    maxY: entry.maxY,
+    structures: entry.structures,
+    requiredNearby: entry.requiredNearby,
+    requiredBase: entry.requiredBase,
+    dimensions: entry.dimensions,
+  };
+}
+
+/**
+ * 判断一个完整条件是否满足场景。
+ * 同一条件内的字段全部满足；列表字段按 Cobblemon 的任一命中语义判断。
+ */
+function conditionMatchesScenario(
+  condition: SpawnConditionSnapshot,
+  scenario: Scenario,
+  tagSet: Set<string>,
+  nearbySet: Set<string>,
+  baseSet: Set<string>,
+): boolean {
+  if (condition.biomes.length > 0 && !condition.biomes.some((b) => tagSet.has(b))) {
+    return false;
+  }
+  if (condition.dimensions.length > 0 && !condition.dimensions.includes(scenario.dimension)) {
+    return false;
+  }
+  const skyRange = DIMENSIONS_WITH_SKY_LIGHT.has(scenario.dimension)
+    ? SKY_EXPOSURES[scenario.skyExposure]
+    : SKY_EXPOSURES.closed;
+  if (
+    !rangesOverlap(
+      condition.minSkyLight ?? 0,
+      condition.maxSkyLight ?? 15,
+      skyRange.minSkyLight,
+      skyRange.maxSkyLight,
+    )
+  ) {
+    return false;
+  }
+  const localRange = LOCAL_LIGHT_RANGES[scenario.localLight];
+  if (
+    !rangesOverlap(
+      condition.minLocalLight ?? 0,
+      condition.maxLocalLight ?? 15,
+      localRange.minLight,
+      localRange.maxLight,
+    )
+  ) {
+    return false;
+  }
+  if (!timeRangeMatches(condition.timeRange, scenario.timeOfDay)) {
+    return false;
+  }
+  if (
+    condition.moonPhases &&
+    scenario.moonPhase !== "any" &&
+    !condition.moonPhases.some((p) => MOON_PHASE_GROUPS[scenario.moonPhase].includes(p))
+  ) {
+    return false;
+  }
+  if (condition.slimeChunk === true && scenario.slimeChunk === "no") {
+    return false;
+  }
+  const raining = isRaining(scenario.weather);
+  const thundering = scenario.weather === "thunder";
+  if (condition.isRaining !== null && condition.isRaining !== raining) {
+    return false;
+  }
+  if (condition.isThundering !== null && condition.isThundering !== thundering) {
+    return false;
+  }
+  if (
+    condition.canSeeSky !== null &&
+    condition.canSeeSky !== SKY_VISIBILITIES[scenario.sky].seesSky
+  ) {
+    return false;
+  }
+  const height = HEIGHT_RANGES[scenario.height];
+  if (
+    height.minY !== null &&
+    height.maxY !== null &&
+    !rangesOverlap(condition.minY ?? -64, condition.maxY ?? 320, height.minY, height.maxY)
+  ) {
+    return false;
+  }
+  if (
+    condition.structures.length > 0 &&
+    (scenario.structure === null || !condition.structures.includes(scenario.structure))
+  ) {
+    return false;
+  }
+  if (
+    condition.requiredNearby.length > 0 &&
+    !condition.requiredNearby.some((feature) => nearbySet.has(feature))
+  ) {
+    return false;
+  }
+  if (
+    condition.requiredBase.length > 0 &&
+    !condition.requiredBase.some((feature) => baseSet.has(feature))
+  ) {
+    return false;
+  }
+  return true;
 }
 
 /**
  * 过滤出指定场景下的生成池条目（宝点心场景）。
  * 源码位置：api/spawning/condition/SpawningCondition.kt:77-135（fits）--
- * 天空光照区间（86-89 行）、雨天 / 雷暴（94-97 行）、
+ * 天空光照区间（86-89 行）、环境（方块）光照区间（86 行）、昼夜时段 timeRange（90 行）、
+ * 月相 moonPhase（84 行）、史莱姆区块 isSlimeChunk（116 行）、雨天 / 雷暴（94-97 行）、
  * biomes 条件任一命中（102-103 行，反条件见各子类的 anticondition 判断）。
  * 固定排除垂钓位置与仅垂钓（minLureLevel）条目--宝点心无法触发。
  * 群系匹配取并集：条目条件生物群系命中任一选中标签即纳入，
- * 反向条件生物群系命中任一选中标签即排除。
+ * 反向条件对象内部字段全部满足时即命中，多个反条件对象任一命中即排除。
  * 天气匹配：按场景天气判断 isRaining / isThundering 条件。
+ * 特殊方块匹配：requiredNearby / requiredBase 各列表内任一命中。
+ * 结构匹配：未选结构排除仅结构条目，选中结构须命中；结构方块不自动视为附近方块。
+ * 环境匹配：天空暴露度（静态天空光照 LightLayer.SKY，0~15 区间重叠）、
+ * 环境亮度（总亮度，0~15 区间重叠）、canSeeSky 与 Y（区间重叠）、
+ * 时段 timeRange（按 Cobblemon tick 区间求交）、月相（编号集合交集）、
+ * 史莱姆区块按场景假设过滤。
  */
-export function filterScenarioPool(
-  data: AllTheMonsData,
-  scenario: Scenario,
-): PoolEntry[] {
+export function filterScenarioPool(data: AllTheMonsData, scenario: Scenario): PoolEntry[] {
   const posSet = new Set(scenario.posTypes);
   const tagSet = new Set(scenario.biomeTags);
-  const raining = isRaining(scenario.weather);
-  const thundering = scenario.weather === "thunder";
+  const nearbySet = new Set(scenario.features ?? []);
+  const baseSet = new Set(scenario.baseFeatures ?? []);
   return data.spawnPool.filter((entry) => {
     if (entry.lureOnly) {
       return false;
@@ -336,43 +603,18 @@ export function filterScenarioPool(
     if (!posSet.has(entry.pos)) {
       return false;
     }
-    if (!lightCompatible(entry, scenario.light)) {
+    if (!conditionMatchesScenario(entryCondition(entry), scenario, tagSet, nearbySet, baseSet)) {
       return false;
     }
-    if (entry.isRaining === true && !raining) {
-      return false;
-    }
-    if (entry.isRaining === false && raining) {
-      return false;
-    }
-    if (entry.isThundering === true && !thundering) {
-      return false;
-    }
-    if (entry.isThundering === false && thundering) {
-      return false;
-    }
-    if (entry.anti.some((a) => tagSet.has(a))) {
-      return false;
-    }
-    if (!entry.biomes.some((b) => tagSet.has(b))) {
+    if (
+      entry.antiConditions.some((condition) =>
+        conditionMatchesScenario(condition, scenario, tagSet, nearbySet, baseSet),
+      )
+    ) {
       return false;
     }
     return true;
   });
-}
-
-/** timeRange 是否与场景光照匹配（day/night 可直接匹配；dawn/dusk/twilight 等无法用白天/黑夜表示，视为不匹配） */
-function timeRangeMatches(timeRange: string | undefined, light: LightRange): boolean {
-  if (!timeRange || timeRange === "any") {
-    return true;
-  }
-  if (timeRange === "day") {
-    return light === "day";
-  }
-  if (timeRange === "night") {
-    return light === "night";
-  }
-  return false;
 }
 
 /**
@@ -381,10 +623,7 @@ function timeRangeMatches(timeRange: string | undefined, light: LightRange): boo
  * conditions 为空或任一满足，且 anticonditions 为空或均不满足时乘以 multiplier；
  * 单个条件的判定复用 SpawningCondition.fits（同 filterScenarioPool 引用）。
  */
-export function weightMultiplierApplies(
-  wm: WeightMultiplier,
-  scenario: Scenario,
-): boolean {
+export function weightMultiplierApplies(wm: WeightMultiplier, scenario: Scenario): boolean {
   const cond = wm.condition;
   const anti = wm.anticondition;
   const raining = isRaining(scenario.weather);
@@ -393,17 +632,23 @@ export function weightMultiplierApplies(
   const condOk =
     (cond.isRaining === undefined || cond.isRaining === raining) &&
     (cond.isThundering === undefined || cond.isThundering === thundering) &&
-    timeRangeMatches(cond.timeRange, scenario.light) &&
+    timeRangeMatches(cond.timeRange, scenario.timeOfDay) &&
     (cond.biomes === undefined ||
       cond.biomes.length === 0 ||
       cond.biomes.some((b) => scenario.biomeTags.includes(b)));
 
+  const hasAntiCondition =
+    anti.isRaining !== undefined ||
+    anti.isThundering !== undefined ||
+    anti.timeRange !== undefined ||
+    (anti.biomes !== undefined && anti.biomes.length > 0);
   const antiSatisfied =
-    (anti.isRaining !== undefined && anti.isRaining === raining) ||
-    (anti.isThundering !== undefined && anti.isThundering === thundering) ||
-    (anti.timeRange !== undefined && timeRangeMatches(anti.timeRange, scenario.light)) ||
-    (anti.biomes !== undefined &&
-      anti.biomes.length > 0 &&
+    hasAntiCondition &&
+    (anti.isRaining === undefined || anti.isRaining === raining) &&
+    (anti.isThundering === undefined || anti.isThundering === thundering) &&
+    timeRangeMatches(anti.timeRange, scenario.timeOfDay) &&
+    (anti.biomes === undefined ||
+      anti.biomes.length === 0 ||
       anti.biomes.some((b) => scenario.biomeTags.includes(b)));
 
   return condOk && !antiSatisfied;
@@ -604,8 +849,7 @@ export function computeImpact(
     const bucketWeightAfter = bucketAfter[entry.entry.bucket] ?? 0;
     const sums = sumByBucket.get(entry.entry.bucket) ?? { base: 0, after: 0 };
 
-    const pBefore =
-      sums.base > 0 ? (bucketWeightBefore / 100) * (entry.baseWeight / sums.base) : 0;
+    const pBefore = sums.base > 0 ? (bucketWeightBefore / 100) * (entry.baseWeight / sums.base) : 0;
     const pAfter =
       sums.after > 0 ? (bucketWeightAfter / 100) * (entry.afterWeight / sums.after) : 0;
 

@@ -17,11 +17,7 @@ function ComboboxValue({ ...props }: ComboboxPrimitive.Value.Props) {
   return <ComboboxPrimitive.Value data-slot="combobox-value" {...props} />;
 }
 
-function ComboboxTrigger({
-  className,
-  children,
-  ...props
-}: ComboboxPrimitive.Trigger.Props) {
+function ComboboxTrigger({ className, children, ...props }: ComboboxPrimitive.Trigger.Props) {
   return (
     <ComboboxPrimitive.Trigger
       data-slot="combobox-trigger"
@@ -60,10 +56,7 @@ function ComboboxInput({
 }) {
   return (
     <InputGroup className={cn("w-auto", className)}>
-      <ComboboxPrimitive.Input
-        render={<InputGroupInput disabled={disabled} />}
-        {...props}
-      />
+      <ComboboxPrimitive.Input render={<InputGroupInput disabled={disabled} />} {...props} />
       <InputGroupAddon align="inline-end">
         {showTrigger && (
           <InputGroupButton
@@ -124,7 +117,7 @@ function ComboboxList({ className, ...props }: ComboboxPrimitive.List.Props) {
     <ComboboxPrimitive.List
       data-slot="combobox-list"
       className={cn(
-        "no-scrollbar max-h-[min(calc(--spacing(72)-(--spacing(9))),calc(var(--available-height)-(--spacing(9))))] scroll-py-1.5 overflow-y-auto overscroll-contain p-1.5 data-empty:p-0",
+        "max-h-[min(calc(--spacing(72)-(--spacing(9))),calc(var(--available-height)-(--spacing(9))))] scroll-py-1.5 overflow-y-auto overscroll-contain p-1.5 data-empty:p-0",
         className,
       )}
       {...props}
@@ -156,11 +149,7 @@ function ComboboxItem({ className, children, ...props }: ComboboxPrimitive.Item.
 
 function ComboboxGroup({ className, ...props }: ComboboxPrimitive.Group.Props) {
   return (
-    <ComboboxPrimitive.Group
-      data-slot="combobox-group"
-      className={cn(className)}
-      {...props}
-    />
+    <ComboboxPrimitive.Group data-slot="combobox-group" className={cn(className)} {...props} />
   );
 }
 
@@ -207,8 +196,7 @@ function ComboboxSeparator({ className, ...props }: ComboboxPrimitive.Separator.
 function ComboboxChips({
   className,
   ...props
-}: React.ComponentPropsWithRef<typeof ComboboxPrimitive.Chips> &
-  ComboboxPrimitive.Chips.Props) {
+}: React.ComponentPropsWithRef<typeof ComboboxPrimitive.Chips> & ComboboxPrimitive.Chips.Props) {
   return (
     <ComboboxPrimitive.Chips
       data-slot="combobox-chips"

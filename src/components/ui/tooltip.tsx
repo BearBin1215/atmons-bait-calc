@@ -3,9 +3,7 @@
 import { cn } from "@/lib/utils";
 
 function TooltipProvider({ delay = 0, ...props }: TooltipPrimitive.Provider.Props) {
-  return (
-    <TooltipPrimitive.Provider data-slot="tooltip-provider" delay={delay} {...props} />
-  );
+  return <TooltipPrimitive.Provider data-slot="tooltip-provider" delay={delay} {...props} />;
 }
 
 function Tooltip({ ...props }: TooltipPrimitive.Root.Props) {
@@ -25,10 +23,7 @@ function TooltipContent({
   children,
   ...props
 }: TooltipPrimitive.Popup.Props &
-  Pick<
-    TooltipPrimitive.Positioner.Props,
-    "align" | "alignOffset" | "side" | "sideOffset"
-  >) {
+  Pick<TooltipPrimitive.Positioner.Props, "align" | "alignOffset" | "side" | "sideOffset">) {
   return (
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Positioner

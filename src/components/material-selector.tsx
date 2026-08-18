@@ -31,7 +31,7 @@ const ICONS_BASE = `${import.meta.env.BASE_URL}icons/`;
 
 /**
  * 材料物品图标 URL：
- * - 树果 / 调料 -> public/icons/berries/<物品id>.png（全部均有；调料如神话桃桃果直接复制同材质树果的 png）
+ * - 树果 / 调料 -> public/icons/berries/<物品id>.png（全部均有；调料如幻之桃桃果直接复制同材质树果的 png）
  * - 其他物品 -> public/icons/items/<物品id>.<ext>（仅 ITEM_ICON_EXTS 列出的材料有）
  */
 function materialIconUrl(material: MaterialInfo): string | null {
@@ -50,12 +50,7 @@ function MaterialIcon({ material }: { material: MaterialInfo }) {
     return null;
   }
   return (
-    <img
-      src={url}
-      alt=""
-      loading="lazy"
-      className="size-4 shrink-0 [image-rendering:pixelated]"
-    />
+    <img src={url} alt="" loading="lazy" className="size-4 shrink-0 [image-rendering:pixelated]" />
   );
 }
 
@@ -158,8 +153,7 @@ export function MaterialSelector({
         if (category === "ev") {
           list = [...list].sort(
             (a, b) =>
-              (EV_STAT_ORDER[a.detail[0] ?? ""] ?? 99) -
-              (EV_STAT_ORDER[b.detail[0] ?? ""] ?? 99),
+              (EV_STAT_ORDER[a.detail[0] ?? ""] ?? 99) - (EV_STAT_ORDER[b.detail[0] ?? ""] ?? 99),
           );
         }
         return (

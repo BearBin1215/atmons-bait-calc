@@ -92,9 +92,22 @@ interface PoolEntryRaw {
   weight: number;
   pos: string;
   biomes: string[];
-  anti: string[];
-  minLight: number | null;
-  maxLight: number | null;
+  /** 最低天空光照（LightLayer.SKY，受遮挡/维度影响，不随昼夜变化） */
+  minSkyLight: number | null;
+  /** 最高天空光照 */
+  maxSkyLight: number | null;
+  /** 最低本地综合亮度（Cobblemon 的 SpawnablePosition.light） */
+  minLocalLight: number | null;
+  /** 最高本地综合亮度 */
+  maxLocalLight: number | null;
+  /** 昼夜时段条件（day / night / dusk；null=无限制） */
+  timeRange: string | null;
+  /** 需要所在的维度 id 列表 */
+  dimensions: string[];
+  /** 允许的月相编号列表（0-7，null=无限制） */
+  moonPhases: number[] | null;
+  /** 是否仅史莱姆区块（true=仅史莱姆区块，false/null=无限制） */
+  slimeChunk: boolean | null;
   lureOnly: boolean;
   /** 是否要求雨天（true=仅雨天，false=仅非雨天，null=无限制） */
   isRaining: boolean | null;
@@ -102,6 +115,41 @@ interface PoolEntryRaw {
   isThundering: boolean | null;
   /** 权重倍率（满足条件时按 multiplier 乘权重，影响概率） */
   weightMultipliers: WeightMultiplierRaw[];
+  /** 需要的附近特殊方块特征 id 列表（列表内任一命中即可） */
+  requiredNearby: string[];
+  /** 需要的脚下基底方块特征 id 列表（列表内任一命中即可） */
+  requiredBase: string[];
+  /** 是否要求露天（true=需露天，false=需不见天，null=无限制） */
+  canSeeSky: boolean | null;
+  /** 最低生成 Y（null=无限制） */
+  minY: number | null;
+  /** 最高生成 Y（null=无限制） */
+  maxY: number | null;
+  /** 需要所在的结构（id 或 #tag，任一命中即可） */
+  structures: string[];
+  /** 反条件列表：每个条件内部字段全部满足，任一条件命中即排除 */
+  antiConditions: ConditionSnapshotRaw[];
+}
+
+/** 生成条件的规范化快照，保留反条件对象边界。 */
+interface ConditionSnapshotRaw {
+  biomes: string[];
+  minSkyLight: number | null;
+  maxSkyLight: number | null;
+  minLocalLight: number | null;
+  maxLocalLight: number | null;
+  timeRange: string | null;
+  moonPhases: number[] | null;
+  slimeChunk: boolean | null;
+  isRaining: boolean | null;
+  isThundering: boolean | null;
+  canSeeSky: boolean | null;
+  minY: number | null;
+  maxY: number | null;
+  structures: string[];
+  requiredNearby: string[];
+  requiredBase: string[];
+  dimensions: string[];
 }
 
 /** 权重倍率（仅保留本工具可评估的条件字段） */
@@ -155,7 +203,7 @@ const ITEM_ZH_FALLBACK: Record<string, string> = {
   golden_carrot: "金胡萝卜",
   allthemodium_apple: "ATM苹果",
   allthemodium_carrot: "ATM胡萝卜",
-  mythical_pecha_berry: "神话桃桃果",
+  mythical_pecha_berry: "幻之桃桃果",
 };
 
 const V = (b: string): string => `minecraft:${b}`;
@@ -306,13 +354,9 @@ const VANILLA_TAG_BIOMES: Record<string, string[]> = {
     "small_end_islands",
     "the_end",
   ].map(V),
-  "#c:is_end": [
-    "end_barrens",
-    "end_highlands",
-    "end_midlands",
-    "small_end_islands",
-    "the_end",
-  ].map(V),
+  "#c:is_end": ["end_barrens", "end_highlands", "end_midlands", "small_end_islands", "the_end"].map(
+    V,
+  ),
   "#c:is_floral": ["cherry_grove", "flower_forest", "meadow", "sunflower_plains"].map(V),
   "#c:is_flower_forest": ["flower_forest"].map(V),
   "#c:flower_forest": ["flower_forest"].map(V),
@@ -424,13 +468,7 @@ const VANILLA_TAG_BIOMES: Record<string, string[]> = {
   "#c:is_plateau": ["savanna_plateau", "wooded_badlands"].map(V),
   "#minecraft:is_river": ["frozen_river", "river"].map(V),
   "#c:is_river": ["frozen_river", "river"].map(V),
-  "#c:is_sandy": [
-    "badlands",
-    "beach",
-    "desert",
-    "eroded_badlands",
-    "wooded_badlands",
-  ].map(V),
+  "#c:is_sandy": ["badlands", "beach", "desert", "eroded_badlands", "wooded_badlands"].map(V),
   "#minecraft:is_savanna": ["savanna", "savanna_plateau", "windswept_savanna"].map(V),
   "#c:is_savanna": ["savanna", "savanna_plateau", "windswept_savanna"].map(V),
   "#c:is_snowy": [
@@ -488,19 +526,11 @@ const VANILLA_TAG_BIOMES: Record<string, string[]> = {
     "snowy_taiga",
     "taiga",
   ].map(V),
-  "#c:is_taiga": [
-    "old_growth_pine_taiga",
-    "old_growth_spruce_taiga",
-    "snowy_taiga",
-    "taiga",
-  ].map(V),
+  "#c:is_taiga": ["old_growth_pine_taiga", "old_growth_spruce_taiga", "snowy_taiga", "taiga"].map(
+    V,
+  ),
   "#c:is_underground": ["deep_dark", "dripstone_caves", "lush_caves"].map(V),
-  "#c:is_wasteland": [
-    "badlands",
-    "basalt_deltas",
-    "eroded_badlands",
-    "wooded_badlands",
-  ].map(V),
+  "#c:is_wasteland": ["badlands", "basalt_deltas", "eroded_badlands", "wooded_badlands"].map(V),
   "#c:is_windswept": [
     "windswept_forest",
     "windswept_gravelly_hills",
@@ -689,6 +719,169 @@ function idOf(path: string): string {
   return basename(path, ".json");
 }
 
+/**
+ * 特殊方块特征目录：将 spawn 条件里出现的方块 id / tag 归约为面向用户的「特征」。
+ * key 为特征 id（前端 i18n 字典 `blockFeature.<id>` 提供显示名，缺失时显示原始值）；
+ * blocks 支持通配：结尾 `*` 表示前缀匹配，`*` 开头表示后缀匹配。
+ * `#cobblemon:natural`（natural preset 的基底方块）视为默认成立，不归入特征。
+ */
+const BLOCK_FEATURE_GROUPS: Record<string, string[]> = {
+  flowers: [
+    "#cobblemon:flowers",
+    "#cobblemon:red_flowers",
+    "#cobblemon:yellow_flowers",
+    "#cobblemon:orange_flowers",
+    "#cobblemon:blue_flowers",
+    "#cobblemon:white_flowers",
+    "#cobblemon:pink_flowers",
+    "minecraft:sunflower",
+  ],
+  redstone: [
+    "#minecraft:redstone_ores",
+    "#c:redstone_ores",
+    "#cobblemon:redstone_blocks",
+    "minecraft:redstone_*",
+  ],
+  lightning_rod: ["minecraft:lightning_rod"],
+  amethyst: [
+    "minecraft:amethyst_block",
+    "minecraft:amethyst_cluster",
+    "minecraft:budding_amethyst",
+    "minecraft:large_amethyst_bud",
+    "minecraft:medium_amethyst_bud",
+    "minecraft:small_amethyst_bud",
+  ],
+  wool: ["minecraft:*_wool", "minecraft:*_carpet", "#minecraft:wool", "#minecraft:wool_carpets"],
+  machines: [
+    "create:cogwheel",
+    "create:large_cogwheel",
+    "create:gearbox",
+    "create:vertical_gearbox",
+  ],
+  structures: [
+    "#cobblemon:ancient_city_blocks",
+    "#cobblemon:desert_pyramid_blocks",
+    "#cobblemon:end_city_blocks",
+    "#cobblemon:jungle_pyramid_blocks",
+    "#cobblemon:mansion_bedroom_blocks",
+    "#cobblemon:mansion_blocks",
+    "#cobblemon:mansion_dining_blocks",
+    "#cobblemon:nether_structure_blocks",
+    "#cobblemon:ocean_ruin_blocks",
+    "#cobblemon:pillager_outpost_blocks",
+    "#cobblemon:ruined_portal_blocks",
+    "#cobblemon:trail_ruins_blocks",
+    "#minecraft:trail_ruins_replaceable",
+    "#minecraft:stone_bricks",
+    "minecraft:stone",
+    "minecraft:cobblestone",
+    "minecraft:mossy_cobblestone",
+    "#minecraft:mossy_cobblestone",
+    "minecraft:stone_bricks",
+    "minecraft:mossy_stone_bricks",
+    "minecraft:cracked_stone_bricks",
+    "minecraft:oak_planks",
+    "minecraft:birch_planks",
+    "minecraft:nether_bricks",
+    "minecraft:end_stone_bricks",
+    "minecraft:purpur_block",
+    "minecraft:purpur_pillar",
+    "minecraft:polished_andesite",
+    "minecraft:polished_basalt",
+    "minecraft:polished_blackstone_bricks",
+    "minecraft:chiseled_polished_blackstone",
+    "minecraft:cracked_polished_blackstone_bricks",
+    "minecraft:gilded_blackstone",
+    "minecraft:bone_block",
+    "minecraft:double_smooth_stone_slab",
+    "minecraft:blue_terracotta",
+    "minecraft:orange_terracotta",
+  ],
+  lava: ["#minecraft:lava", "minecraft:lava", "minecraft:magma_block"],
+  water: [
+    "#minecraft:water",
+    "minecraft:water",
+    "minecraft:seagrass",
+    "minecraft:kelp_plant",
+    "minecraft:lily_pad",
+    "#minecraft:coral_blocks",
+    "#minecraft:corals",
+    "#cobblemon:dead_coral",
+  ],
+  ores: [
+    "#minecraft:coal_ores",
+    "#minecraft:iron_ores",
+    "#minecraft:diamond_ores",
+    "#minecraft:gold_ores",
+    "#minecraft:copper_ores",
+    "#minecraft:lapis_ores",
+    "#minecraft:emerald_ores",
+    "#cobblemon:gemstones",
+  ],
+  sand: ["#minecraft:sand", "#c:sand"],
+  concrete: ["#cobblemon:concrete_blocks"],
+  cake: ["minecraft:cake"],
+  sugar_cane: ["minecraft:sugar_cane"],
+  saccharine_trees: ["#cobblemon:saccharine_trees"],
+  pumpkin: ["minecraft:pumpkin", "minecraft:carved_pumpkin"],
+  wheat: ["minecraft:wheat"],
+  berries: ["#cobblemon:apricorns", "#cobblemon:berries", "cobblemon:medicinal_leek"],
+  trees: [
+    "#cobblemon:trees",
+    "#minecraft:leaves",
+    "#c:leaves",
+    "minecraft:*_leaves",
+    "#minecraft:convertable_to_mud",
+    "aether:decorated_holiday_leaves",
+    "aether:holiday_leaves",
+    "aether:present",
+  ],
+  furnishings: [
+    "minecraft:bell",
+    "cobblemon:pc",
+    "#minecraft:beehives",
+    "minecraft:cobweb",
+    "minecraft:quartz_block",
+  ],
+  farmland: ["minecraft:farmland"],
+};
+
+/** 将条件中的单个方块 id / tag 归约为特征 id；无法归约时返回原始值本身 */
+function blockFeatureId(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed === "#cobblemon:natural") {
+    return "natural";
+  }
+  for (const [feature, blocks] of Object.entries(BLOCK_FEATURE_GROUPS)) {
+    for (const pattern of blocks) {
+      const star = pattern.indexOf("*");
+      if (star !== -1) {
+        const prefix = pattern.slice(0, star);
+        const suffix = pattern.slice(star + 1);
+        if (trimmed.startsWith(prefix) && trimmed.endsWith(suffix)) {
+          return feature;
+        }
+      } else if (trimmed === pattern) {
+        return feature;
+      }
+    }
+  }
+  return trimmed;
+}
+
+/** 将一组方块条件字符串归约为特征 id 列表（含 natural，去重保序） */
+function featuresFromBlocks(blocks: string[]): string[] {
+  const out: string[] = [];
+  for (const raw of blocks) {
+    const id = blockFeatureId(raw);
+    if (out.includes(id)) {
+      continue;
+    }
+    out.push(id);
+  }
+  return out;
+}
+
 /** 解析 bait 效果字段 */
 function parseEffects(raw: unknown): BaitEffect[] {
   if (!Array.isArray(raw)) {
@@ -712,10 +905,7 @@ function parseEffects(raw: unknown): BaitEffect[] {
  * baitId 使用相对路径（不含扩展名），如 berries/pecha_berry、fruits/allthemodium_apple；
  * 覆盖数据中的同名条目会覆盖基础数据。
  */
-function loadBaitEffects(
-  dataDir: string,
-  overridesDir: string | null,
-): Map<string, SpawnBaitRaw> {
+function loadBaitEffects(dataDir: string, overridesDir: string | null): Map<string, SpawnBaitRaw> {
   const map = new Map<string, SpawnBaitRaw>();
   const dirs: string[] = [];
   dirs.push(join(dataDir, "spawn_bait_effects"));
@@ -767,10 +957,7 @@ function loadBerries(dataDir: string): Map<string, BerryRaw> {
 }
 
 /** 读取 seasonings 目录，返回 seasoningId -> { item, effects }（仅保留含 baitEffects 的） */
-function loadSeasonings(
-  dataDir: string,
-  overridesDir: string | null,
-): Map<string, SeasoningRaw> {
+function loadSeasonings(dataDir: string, overridesDir: string | null): Map<string, SeasoningRaw> {
   const map = new Map<string, SeasoningRaw>();
   const dirs: string[] = [];
   dirs.push(join(dataDir, "seasonings"));
@@ -780,11 +967,7 @@ function loadSeasonings(
   for (const dir of dirs) {
     for (const file of collectJsonFiles(dir)) {
       const seasoning = readJson(file);
-      if (
-        seasoning === null ||
-        typeof seasoning !== "object" ||
-        Array.isArray(seasoning)
-      ) {
+      if (seasoning === null || typeof seasoning !== "object" || Array.isArray(seasoning)) {
         continue;
       }
       const effects = parseEffects((seasoning as { baitEffects?: unknown }).baitEffects);
@@ -802,10 +985,7 @@ function loadSeasonings(
 }
 
 /** 读取 species 数据，返回 id -> { names{zh,en}, types, eggGroups, evYield } */
-function loadSpecies(
-  dataDir: string,
-  lang: Record<string, string>,
-): Map<string, SpeciesRaw> {
+function loadSpecies(dataDir: string, lang: Record<string, string>): Map<string, SpeciesRaw> {
   const map = new Map<string, SpeciesRaw>();
   const dir = join(dataDir, "species");
   for (const file of collectJsonFiles(dir)) {
@@ -830,9 +1010,7 @@ function loadSpecies(
     }
     const ev: Record<string, number> = {};
     if (speciesData.evYield !== null && speciesData.evYield !== undefined) {
-      for (const [stat, value] of Object.entries(
-        speciesData.evYield as Record<string, unknown>,
-      )) {
+      for (const [stat, value] of Object.entries(speciesData.evYield as Record<string, unknown>)) {
         if (Number(value) > 0) {
           ev[stat] = Number(value);
         }
@@ -855,8 +1033,100 @@ function loadSpecies(
   return map;
 }
 
-/** 读取世界生成池条目（跳过 herds 子目录），合并基础数据与覆盖数据（覆盖同名文件） */
-function loadSpawnPool(dataDir: string, overridesDir: string | null): PoolEntryRaw[] {
+/**
+ * 读取 spawn_detail_presets 目录，返回 presetId -> { condition, anticondition }。
+ * 仅保留生成池建模需要关注的条件字段（方块条件等）。
+ */
+function loadSpawnDetailPresets(
+  dataDir: string,
+  overridesDir: string | null,
+): Map<string, { condition: Record<string, unknown>; anticondition: Record<string, unknown> }> {
+  const map = new Map<
+    string,
+    { condition: Record<string, unknown>; anticondition: Record<string, unknown> }
+  >();
+  const dirs: string[] = [];
+  dirs.push(join(dataDir, "spawn_detail_presets"));
+  if (overridesDir && existsSync(join(overridesDir, "spawn_detail_presets"))) {
+    dirs.push(join(overridesDir, "spawn_detail_presets"));
+  }
+  for (const dir of dirs) {
+    for (const file of collectJsonFiles(dir)) {
+      const preset = readJson(file);
+      if (preset === null || typeof preset !== "object" || Array.isArray(preset)) {
+        continue;
+      }
+      const data = preset as { condition?: unknown; anticondition?: unknown };
+      map.set(idOf(file), {
+        condition:
+          data.condition !== null &&
+          typeof data.condition === "object" &&
+          !Array.isArray(data.condition)
+            ? (data.condition as Record<string, unknown>)
+            : {},
+        anticondition:
+          data.anticondition !== null &&
+          typeof data.anticondition === "object" &&
+          !Array.isArray(data.anticondition)
+            ? (data.anticondition as Record<string, unknown>)
+            : {},
+      });
+    }
+  }
+  return map;
+}
+
+/** 从条件对象中提取方块条件字符串列表（neededNearbyBlocks / neededBaseBlocks，任意键存在即并入） */
+function blockListFrom(condition: Record<string, unknown>, key: string): string[] {
+  const value = condition[key];
+  return Array.isArray(value) ? (value as string[]).map(String) : [];
+}
+
+/** 将原始条件字段归一化为前端可评估的快照，并保留数组字段的 OR 语义。 */
+function conditionSnapshot(condition: Record<string, unknown>): ConditionSnapshotRaw {
+  const numberOrNull = (value: unknown): number | null =>
+    value === null || value === undefined ? null : Number(value);
+  const booleanOrNull = (value: unknown): boolean | null =>
+    value === null || value === undefined ? null : Boolean(value);
+  const stringList = (key: string): string[] =>
+    Array.isArray(condition[key]) ? (condition[key] as unknown[]).map(String) : [];
+
+  return {
+    biomes: stringList("biomes"),
+    minSkyLight: numberOrNull(condition.minSkyLight),
+    maxSkyLight: numberOrNull(condition.maxSkyLight),
+    minLocalLight: numberOrNull(condition.minLight),
+    maxLocalLight: numberOrNull(condition.maxLight),
+    timeRange: typeof condition.timeRange === "string" ? condition.timeRange : null,
+    moonPhases: parseMoonPhases(condition.moonPhase),
+    slimeChunk: booleanOrNull(condition.isSlimeChunk),
+    isRaining: booleanOrNull(condition.isRaining),
+    isThundering: booleanOrNull(condition.isThundering),
+    canSeeSky: booleanOrNull(condition.canSeeSky),
+    minY: numberOrNull(condition.minY),
+    maxY: numberOrNull(condition.maxY),
+    structures: stringList("structures"),
+    requiredNearby: featuresFromBlocks(blockListFrom(condition, "neededNearbyBlocks")),
+    requiredBase: featuresFromBlocks(blockListFrom(condition, "neededBaseBlocks")),
+    dimensions: stringList("dimensions"),
+  };
+}
+
+/**
+ * 读取世界生成池条目（跳过 herds 子目录），合并基础数据与覆盖数据（覆盖同名文件）。
+ * 同时将 spawn 的 presets（spawn_detail_presets）与内联条件的方块条件
+ * （neededNearbyBlocks / neededBaseBlocks）合并后归约为特殊方块特征 id。
+ */
+function loadSpawnPool(
+  dataDir: string,
+  overridesDir: string | null,
+  presets: Map<
+    string,
+    { condition: Record<string, unknown>; anticondition: Record<string, unknown> }
+  >,
+  /** 输出参数：特征 id -> 数据中实际出现的原始方块/tag 列表（供前端 tooltip 显示） */
+  featureBlocks: Map<string, Set<string>>,
+): PoolEntryRaw[] {
   // 按相对路径收集文件，覆盖数据（后处理）优先
   const filesByKey = new Map<string, string>();
   const collect = (root: string): void => {
@@ -896,59 +1166,102 @@ function loadSpawnPool(dataDir: string, overridesDir: string | null): PoolEntryR
         spawnablePositionType?: unknown;
         context?: unknown;
         weightMultiplier?: unknown;
-        condition?: {
-          biomes?: unknown;
-          anti?: unknown;
-          minSkyLight?: unknown;
-          maxSkyLight?: unknown;
-          minLureLevel?: unknown;
-          maxLureLevel?: unknown;
-          isRaining?: unknown;
-          isThundering?: unknown;
-        };
-        anticondition?: { biomes?: unknown };
+        presets?: unknown;
+        condition?: unknown;
+        anticondition?: unknown;
       };
       if (spawnData.type !== "pokemon") {
         continue;
       }
-      const condition = spawnData.condition ?? {};
-      const anticondition = spawnData.anticondition ?? {};
+      const condition =
+        spawnData.condition !== null &&
+        typeof spawnData.condition === "object" &&
+        !Array.isArray(spawnData.condition)
+          ? (spawnData.condition as Record<string, unknown>)
+          : {};
+      const anticondition =
+        spawnData.anticondition !== null &&
+        typeof spawnData.anticondition === "object" &&
+        !Array.isArray(spawnData.anticondition)
+          ? (spawnData.anticondition as Record<string, unknown>)
+          : {};
       const pokemon = String(spawnData.pokemon ?? "");
       const p = pokemon.trim().split(/\s+/)[0] ?? "";
+
+      // 合并 preset 与内联条件：数组字段追加合并（union），标量字段内联优先（与 Merger.INSERT/KEEP 一致）
+      const presetList = Array.isArray(spawnData.presets)
+        ? (spawnData.presets as string[]).map(String)
+        : [];
+      const mergedCond: Record<string, unknown> = { ...condition };
+      const antiConditionObjects: Record<string, unknown>[] = [];
+      if (Object.keys(anticondition).length > 0) {
+        antiConditionObjects.push(anticondition);
+      }
+      const inlineAnti = condition.anti;
+      if (Array.isArray(inlineAnti) && inlineAnti.length > 0) {
+        antiConditionObjects.push({ biomes: inlineAnti.map(String) });
+      } else if (
+        inlineAnti !== null &&
+        typeof inlineAnti === "object" &&
+        !Array.isArray(inlineAnti)
+      ) {
+        antiConditionObjects.push(inlineAnti as Record<string, unknown>);
+      }
+      for (const presetId of presetList) {
+        const preset = presets.get(presetId);
+        if (!preset) {
+          continue;
+        }
+        for (const [key, value] of Object.entries(preset.condition)) {
+          const existing = mergedCond[key];
+          if (Array.isArray(value)) {
+            mergedCond[key] = [
+              ...(Array.isArray(existing) ? (existing as string[]) : []),
+              ...value,
+            ];
+          } else if (existing === undefined) {
+            mergedCond[key] = value;
+          }
+        }
+        if (Object.keys(preset.anticondition).length > 0) {
+          antiConditionObjects.push(preset.anticondition);
+        }
+      }
+
+      const positiveCondition = conditionSnapshot(mergedCond);
+      const antiConditions = antiConditionObjects.map(conditionSnapshot);
       const hasLureCondition =
-        (condition.minLureLevel ?? null) !== null ||
-        (condition.maxLureLevel ?? null) !== null;
+        (mergedCond.minLureLevel ?? null) !== null || (mergedCond.maxLureLevel ?? null) !== null;
+
       entries.push({
         p,
         bucket: String(spawnData.bucket ?? "common"),
         weight: Number(spawnData.weight ?? 0),
         // 兼容新老字段：spawnablePositionType 或 context
         pos: String(spawnData.spawnablePositionType ?? spawnData.context ?? ""),
-        biomes: Array.isArray(condition.biomes)
-          ? (condition.biomes as string[]).map(String)
-          : [],
-        anti: Array.isArray(anticondition.biomes)
-          ? (anticondition.biomes as string[]).map(String)
-          : [],
-        minLight:
-          condition.minSkyLight !== null && condition.minSkyLight !== undefined
-            ? Number(condition.minSkyLight)
-            : null,
-        maxLight:
-          condition.maxSkyLight !== null && condition.maxSkyLight !== undefined
-            ? Number(condition.maxSkyLight)
-            : null,
+        ...positiveCondition,
         lureOnly: hasLureCondition,
-        isRaining:
-          condition.isRaining !== null && condition.isRaining !== undefined
-            ? Boolean(condition.isRaining)
-            : null,
-        isThundering:
-          condition.isThundering !== null && condition.isThundering !== undefined
-            ? Boolean(condition.isThundering)
-            : null,
         weightMultipliers: parseWeightMultipliers(spawnData.weightMultiplier),
+        antiConditions,
       });
+
+      // 记录每个特征实际出现的原始方块/tag（供前端 tooltip）
+      for (const raw of [
+        ...blockListFrom(mergedCond, "neededNearbyBlocks"),
+        ...blockListFrom(mergedCond, "neededBaseBlocks"),
+        ...antiConditionObjects.flatMap((item) => [
+          ...blockListFrom(item, "neededNearbyBlocks"),
+          ...blockListFrom(item, "neededBaseBlocks"),
+        ]),
+      ]) {
+        const id = blockFeatureId(raw);
+        if (id === "natural") {
+          continue;
+        }
+        const blocks = featureBlocks.get(id) ?? new Set<string>();
+        blocks.add(raw.trim());
+        featureBlocks.set(id, blocks);
+      }
     }
   }
   return entries;
@@ -1003,6 +1316,38 @@ function parseWeightMultipliers(raw: unknown): WeightMultiplierRaw[] {
       anticondition: pickMultiplierCondition(w?.anticondition),
     };
   });
+}
+
+/**
+ * 解析月相条件字符串为月相编号数组（0-7）。
+ * 支持逗号分隔与区间，如 "0,4"（满月+新月）、"1-3"（下弦月）、"5,6,7"（上弦月）。
+ * @param raw 原始月相条件（字符串或数字），无法解析返回 null
+ */
+function parseMoonPhases(raw: unknown): number[] | null {
+  if (typeof raw !== "string" && typeof raw !== "number") {
+    return null;
+  }
+  const s = String(raw).trim();
+  if (!s) {
+    return null;
+  }
+  const set = new Set<number>();
+  for (const part of s.split(",")) {
+    const p = part.trim();
+    if (/^\d+$/.test(p)) {
+      set.add(Number(p));
+      continue;
+    }
+    const m = /^(\d+)\s*-\s*(\d+)$/.exec(p);
+    if (m) {
+      const lo = Number(m[1]);
+      const hi = Number(m[2]);
+      for (let i = Math.min(lo, hi); i <= Math.max(lo, hi); i++) {
+        set.add(i);
+      }
+    }
+  }
+  return set.size > 0 ? [...set].sort((a, b) => a - b) : null;
 }
 
 /**
@@ -1065,9 +1410,7 @@ function loadBiomeTagContents(dataRoots: string[]): Record<string, string[]> {
  * 注：指向外部数据包（如 #minecraft:is_jungle）的嵌套标签在本仓库内无法展开，
  * 因此仅经由外部标签引用的原版群系不会出现在结果中。
  */
-function buildBiomeTagReverse(
-  contents: Record<string, string[]>,
-): Record<string, string[]> {
+function buildBiomeTagReverse(contents: Record<string, string[]>): Record<string, string[]> {
   const nestedCache = new Map<string, Set<string>>();
   const resolveTag = (tag: string, stack: Set<string>): Set<string> => {
     const cached = nestedCache.get(tag);
@@ -1205,10 +1548,7 @@ function buildMaterials(
       id,
       kind: "seasoning",
       names: {
-        zh:
-          itemZhLabel(lang, itemId) ??
-          itemZhLabel(lang, seasoningId) ??
-          humanize(seasoningId),
+        zh: itemZhLabel(lang, itemId) ?? itemZhLabel(lang, seasoningId) ?? humanize(seasoningId),
         en:
           itemLangLabel(enLang, itemId) ??
           itemLangLabel(enLang, seasoningId) ??
@@ -1242,7 +1582,9 @@ function main(): void {
   const berries = loadBerries(DATA_DIR);
   const seasonings = loadSeasonings(DATA_DIR, overridesDir);
   const species = loadSpecies(DATA_DIR, lang);
-  const spawnPool = loadSpawnPool(DATA_DIR, overridesDir);
+  const spawnDetailPresets = loadSpawnDetailPresets(DATA_DIR, overridesDir);
+  const featureBlocks = new Map<string, Set<string>>();
+  const spawnPool = loadSpawnPool(DATA_DIR, overridesDir, spawnDetailPresets, featureBlocks);
   // 群系标签内容：基础模组（cobblemon 命名空间）+ All the Mons 数据包根目录
   const overridesDataRoot = overridesDir ? resolve(overridesDir, "..") : null;
   const biomeTagContents = loadBiomeTagContents(
@@ -1278,6 +1620,11 @@ function main(): void {
   write("bait-effects.json", Object.fromEntries(baitEffectsAll));
   write("species.json", [...species.values()]);
   write("spawn-pool.json", spawnPool);
+  write("block-features.json", {
+    ...Object.fromEntries(
+      [...featureBlocks.entries()].map(([id, blocks]) => [id, [...blocks].sort()]),
+    ),
+  });
   write("biome-tags-reverse.json", biomeTagReverse);
   write("materials.json", materials);
   write("labels.json", {

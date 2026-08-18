@@ -5,13 +5,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation, Trans } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyDescription, EmptyTitle } from "@/components/ui/empty";
 import { Spinner } from "@/components/ui/spinner";
 import { normalizeLocale } from "@/lib/i18n";
@@ -19,8 +13,15 @@ import {
   computeImpact,
   resolveLure,
   type Scenario,
-  type LightRange,
   type Weather,
+  type HeightRange,
+  type SkyVisibility,
+  type SkyExposure,
+  type LocalLightRange,
+  type DimensionId,
+  type MoonPhase,
+  type SlimeChunk,
+  type TimeOfDay,
 } from "@/lib/calc";
 import { loadAllTheMonsData } from "@/lib/loader";
 import type { AllTheMonsData } from "@/lib/types";
@@ -41,19 +42,38 @@ export default function Calculator() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [biomeId, setBiomeId] = useState("minecraft:plains");
-  const [light, setLight] = useState<LightRange>("day");
+  /** 时段（单选，默认白天） */
+  const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>("day");
+  /** 所在维度（标准维度，决定天空光层是否存在） */
+  const [dimension, setDimension] = useState<DimensionId>("minecraft:overworld");
   const [weather, setWeather] = useState<Weather>("clear");
   /** 生成位置（单选：宝点心周围地形同时存在多种时，应分次计算） */
   const [posType, setPosType] = useState<string>("grounded");
+  /** 附近存在的特殊方块特征（多选，默认普通自然地形） */
+  const [features, setFeatures] = useState<string[]>([]);
+  /** 脚下基底方块（单选，默认自然方块） */
+  const [baseFeature, setBaseFeature] = useState<string>("natural");
+  /** 天空可见性（单选，默认露天） */
+  const [sky, setSky] = useState<SkyVisibility>("open");
+  /** 高度范围（单选，默认低处） */
+  const [height, setHeight] = useState<HeightRange>("low");
+  /** 天空暴露度（单选，默认露天） */
+  const [skyExposure, setSkyExposure] = useState<SkyExposure>("open");
+  /** 环境亮度（单选，默认明亮） */
+  const [localLight, setLocalLight] = useState<LocalLightRange>("bright");
+  /** 月相（单选，默认不限） */
+  const [moonPhase, setMoonPhase] = useState<MoonPhase>("any");
+  /** 是否在史莱姆区块（单选，默认否） */
+  const [slimeChunk, setSlimeChunk] = useState<SlimeChunk>("no");
+  /** 所在结构 id/tag（null=普通地形） */
+  const [structure, setStructure] = useState<string | null>(null);
 
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     loadAllTheMonsData()
       .then((d) => setData(d))
-      .catch((err: unknown) =>
-        setError(err instanceof Error ? err.message : String(err)),
-      );
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)));
   }, [reloadKey]);
 
   const poolTagSet = useMemo(() => {
@@ -65,8 +85,10 @@ export default function Calculator() {
       for (const b of entry.biomes) {
         set.add(b);
       }
-      for (const b of entry.anti) {
-        set.add(b);
+      for (const anti of entry.antiConditions ?? []) {
+        for (const b of anti.biomes) {
+          set.add(b);
+        }
       }
     }
     return set;
@@ -83,23 +105,96 @@ export default function Calculator() {
     () =>
       data
         ? Object.keys(data.biomeTagReverse)
-            .filter((b) =>
-              (data.biomeTagReverse[b] ?? []).some((tag) => poolTagSet.has(tag)),
-            )
+            .filter((b) => (data.biomeTagReverse[b] ?? []).some((tag) => poolTagSet.has(tag)))
             .sort()
         : [],
     [data, poolTagSet],
   );
 
   const scenario: Scenario = useMemo(
-    () => ({ biomeTags: resolvedBiomeTags, light, weather, posTypes: [posType] }),
-    [resolvedBiomeTags, light, weather, posType],
+    () => ({
+      biomeTags: resolvedBiomeTags,
+      timeOfDay,
+      dimension,
+      weather,
+      posTypes: [posType],
+      features,
+      baseFeatures: [baseFeature],
+      sky,
+      height,
+      skyExposure,
+      localLight,
+      moonPhase,
+      slimeChunk,
+      structure,
+    }),
+    [
+      resolvedBiomeTags,
+      timeOfDay,
+      dimension,
+      weather,
+      posType,
+      features,
+      baseFeature,
+      sky,
+      height,
+      skyExposure,
+      localLight,
+      moonPhase,
+      slimeChunk,
+      structure,
+    ],
   );
 
-  const lure = useMemo(
-    () => (data ? resolveLure(selected, data) : null),
-    [data, selected],
-  );
+  /** 生成池中出现过的特征 id 列表（供场景设置勾选：附近一组、脚下基底一组） */
+  const featureOptions = useMemo(() => {
+    const nearby = new Set<string>();
+    const base = new Set<string>();
+    if (data) {
+      for (const entry of data.spawnPool) {
+        for (const f of entry.requiredNearby ?? []) {
+          nearby.add(f);
+        }
+        for (const anti of entry.antiConditions ?? []) {
+          for (const f of anti.requiredNearby ?? []) {
+            nearby.add(f);
+          }
+        }
+        for (const f of entry.requiredBase ?? []) {
+          base.add(f);
+        }
+        for (const anti of entry.antiConditions ?? []) {
+          for (const f of anti.requiredBase ?? []) {
+            base.add(f);
+          }
+        }
+      }
+    }
+    return {
+      nearbyOptions: [...nearby],
+      baseOptions: [...base].filter((feature) => feature !== "natural"),
+    };
+  }, [data]);
+
+  /** 生成池中出现过的结构 id/tag 列表（供「所在结构」单选） */
+  const structureOptions = useMemo(() => {
+    const set = new Set<string>();
+    if (data) {
+      for (const entry of data.spawnPool) {
+        for (const s of entry.structures ?? []) {
+          set.add(s);
+        }
+        for (const anti of entry.antiConditions ?? []) {
+          for (const s of anti.structures ?? []) {
+            set.add(s);
+          }
+        }
+      }
+    }
+    return [...set];
+  }, [data]);
+
+  const lure = useMemo(() => (data ? resolveLure(selected, data) : null), [data, selected]);
 
   const impact = useMemo(
     () => (data ? computeImpact(data, scenario, selected) : null),
@@ -208,9 +303,7 @@ export default function Calculator() {
       <Card>
         <CardHeader>
           <CardTitle>{t("material.title")}</CardTitle>
-          <CardDescription>
-            {t("material.description", { max: MAX_MATERIALS })}
-          </CardDescription>
+          <CardDescription>{t("material.description", { max: MAX_MATERIALS })}</CardDescription>
         </CardHeader>
         <CardContent>
           <MaterialSelector
@@ -238,12 +331,36 @@ export default function Calculator() {
             onBiomeChange={setBiomeId}
             tagsByBiome={data.biomeTagReverse}
             biomeTags={resolvedBiomeTags}
-            light={light}
-            onLightChange={setLight}
+            timeOfDay={timeOfDay}
+            onTimeOfDayChange={setTimeOfDay}
+            dimension={dimension}
+            onDimensionChange={setDimension}
             weather={weather}
             onWeatherChange={setWeather}
             posType={posType}
             onPosTypeChange={setPosType}
+            features={features}
+            featureOptions={featureOptions.nearbyOptions}
+            onFeaturesChange={setFeatures}
+            baseFeature={baseFeature}
+            baseFeatureOptions={featureOptions.baseOptions}
+            onBaseFeatureChange={setBaseFeature}
+            sky={sky}
+            onSkyChange={setSky}
+            height={height}
+            onHeightChange={setHeight}
+            skyExposure={skyExposure}
+            onSkyExposureChange={setSkyExposure}
+            localLight={localLight}
+            onLocalLightChange={setLocalLight}
+            moonPhase={moonPhase}
+            onMoonPhaseChange={setMoonPhase}
+            slimeChunk={slimeChunk}
+            onSlimeChunkChange={setSlimeChunk}
+            structure={structure}
+            structureOptions={structureOptions}
+            onStructureChange={setStructure}
+            blockFeatures={data.blockFeatures}
           />
         </CardContent>
       </Card>

@@ -37,14 +37,6 @@ All the Mons 宝点心概率计算器，部署于 GitHub Pages（BearBin1215/atm
 - `lib/labels.ts` 只放语言无关内容（颜色、排序、选项值列表），禁止添加翻译文本
 - 新引入的可见文案必须走 i18n（`t()` / `Trans`）或数据多语言字段，禁止硬编码单语言
 
-## 与旧工程的同步约定
-
-- 本工程与 BearBin1215.github.io 共享数据抓取脚本与数据层：
-  - `scripts/extract-all-the-mons.ts` 两工程核心逻辑一致
-  - `src/lib/` 下的 `types.ts`、`loader.ts`、`calc.ts` 与旧工程 `src/pages/toys/all-the-mons/` 对应文件保持一致
-  - `public/data/` 数据由同一脚本生成
-- 修改脚本或数据格式时，需同步更新旧工程并运行其测试（旧工程测试位于 `test/`，命令 `pnpm test:run`）
-
 ## 常用指令
 
 ```bash

@@ -130,8 +130,7 @@ export function ImpactTable({
     const byName = keyword
       ? impact.species.filter(
           (s) =>
-            resolvedName(s).toLowerCase().includes(keyword) ||
-            s.id.toLowerCase().includes(keyword),
+            resolvedName(s).toLowerCase().includes(keyword) || s.id.toLowerCase().includes(keyword),
         )
       : impact.species;
     const filtered =
@@ -268,9 +267,7 @@ export function ImpactTable({
                     <TableCell className="whitespace-nowrap">
                       {s.buckets.map((b) => t(`rarity.${b}`)).join(bucketSeparator)}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {fmtPct(s.pBefore)}
-                    </TableCell>
+                    <TableCell className="text-right tabular-nums">{fmtPct(s.pBefore)}</TableCell>
                     <TableCell className="text-right font-medium tabular-nums">
                       <ProbText value={s.pAfter} />
                     </TableCell>

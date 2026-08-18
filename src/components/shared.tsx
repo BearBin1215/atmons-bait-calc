@@ -70,11 +70,7 @@ export function fmtRatio(ratio: number | null): string {
  * typing -> 属性、egg_group -> 蛋群、ev 经 EV_STAT_KEYS 映射为能力值键，
  * 其余分类原样返回末段 id；子类别可能带路径（如 a/b/steel），统一取末段。
  */
-export function categoryLabel(
-  category: string,
-  subcategory: string,
-  labels: UiLabels,
-): string {
+export function categoryLabel(category: string, subcategory: string, labels: UiLabels): string {
   const kind = category.replace(/^cobblemon:/, "");
   const path = subcategory.includes("/") ? subcategory.split("/").pop()! : subcategory;
   if (kind === "typing") {

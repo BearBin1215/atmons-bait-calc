@@ -55,11 +55,7 @@ function App() {
     <div className="flex min-h-svh flex-col">
       <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center justify-between border-b bg-background px-6">
         <h1 className="flex items-center gap-2 font-heading text-lg font-semibold">
-          <img
-            src={`${import.meta.env.BASE_URL}poke_snack.png`}
-            alt=""
-            className="size-6"
-          />
+          <img src={`${import.meta.env.BASE_URL}poke_snack.png`} alt="" className="size-6" />
           {t("header.title")}
         </h1>
         <div className="flex items-center gap-3">
@@ -73,9 +69,7 @@ function App() {
                   key={l}
                   onClick={() => i18n.changeLanguage(l)}
                   className={
-                    i18n.language === l
-                      ? "normal-case"
-                      : "text-muted-foreground normal-case"
+                    i18n.language === l ? "normal-case" : "text-muted-foreground normal-case"
                   }
                 >
                   {LOCALE_LABELS[l]}
@@ -94,8 +88,8 @@ function App() {
           </a>
         </div>
       </header>
-      <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl">
+      <main className="flex-1 px-4 py-6 sm:px-6 lg:px-6">
+        <div className="mx-auto">
           <Calculator />
         </div>
       </main>

@@ -51,8 +51,40 @@ export const MATERIAL_CATEGORY_ORDER = ["typing", "egg_group", "ev", "other"] as
 /** 生成位置类型可选项（宝点心场景，不含垂钓） */
 export const POSITION_VALUES = ["grounded", "surface", "submerged", "seafloor"] as const;
 
-/** 光照范围选项（白天 / 夜晚互斥） */
-export const LIGHT_VALUES = ["day", "night"] as const;
+/** 时段选项（白天 / 黄昏 / 夜晚） */
+export const TIME_OF_DAY_VALUES = ["day", "dusk", "night"] as const;
+
+/** 标准维度选项 */
+export const DIMENSION_VALUES = [
+  "minecraft:overworld",
+  "minecraft:the_nether",
+  "minecraft:the_end",
+] as const;
 
 /** 天气选项 */
 export const WEATHER_VALUES = ["clear", "rain", "thunder"] as const;
+
+/** 天空可见性选项（露天 / 不露天） */
+export const SKY_VISIBILITY_VALUES = ["open", "sheltered"] as const;
+
+/** 天空暴露度选项（露天 / 半遮蔽 / 封闭） */
+export const SKY_EXPOSURE_VALUES = ["open", "semi", "closed"] as const;
+
+/** 高度范围选项（低处 / 高处 / 不限） */
+export const HEIGHT_RANGE_VALUES = ["low", "high", "any"] as const;
+
+/** 环境亮度选项（明亮 / 昏暗 / 无光源） */
+export const LOCAL_LIGHT_VALUES = ["bright", "dim", "dark"] as const;
+
+/** 月相选项（满月 / 渐亏 / 新月 / 渐盈 / 不限） */
+export const MOON_PHASE_VALUES = ["full", "waning", "new", "waxing", "any"] as const;
+
+/** 史莱姆区块选项（是 / 否） */
+export const SLIME_CHUNK_VALUES = ["yes", "no"] as const;
+
+/** 环境亮度选项的数值区间文本 */
+export const LOCAL_LIGHT_LABELS: Record<string, string> = {
+  bright: "8~15",
+  dim: "1~7",
+  dark: "0",
+};

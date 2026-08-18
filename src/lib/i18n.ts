@@ -47,7 +47,8 @@ i18n.use(initReactI18next).init({
         "material.clear": "清空（{{count}}/{{max}}）",
         "material.emptySlot": "空槽位 {{index}}",
         "material.remove": "移除 {{name}}",
-        "material.hint": "点击材料会加入下一个空槽位，重复点击可重复添加；点击已选槽位即可移除。",
+        "material.hint":
+          "点击材料会加入下一个空槽位，重复点击可重复添加；点击已选槽位即可移除。",
 
         "biome.placeholder": "搜索群系 id 或 #标签…（如 plains / #is_forest）",
         "biome.empty": "无匹配群系",
@@ -99,7 +100,8 @@ i18n.use(initReactI18next).init({
         "structure.placeholder": "搜索结构…",
         "structure.empty": "无匹配结构",
         "scenario.features": "附近特殊方块",
-        "scenario.featuresHint": "勾选当前环境附近存在的特殊方块；未勾选即视为普通自然地形。",
+        "scenario.featuresHint":
+          "勾选当前环境附近存在的特殊方块；未勾选即视为普通自然地形。",
         "scenario.baseFeatures": "地面方块",
         "blockFeature.natural": "自然",
         "blockFeature.tooltip": "包含方块：",
@@ -324,7 +326,8 @@ i18n.use(initReactI18next).init({
         "table.summaryBaseNote": " (no materials selected — base spawn rates shown)",
         "table.filterPlaceholder": "Filter by name…",
         "table.empty": "No matching entries",
-        "table.emptyHint": "No spawn entries match this scenario. Adjust the scenario settings.",
+        "table.emptyHint":
+          "No spawn entries match this scenario. Adjust the scenario settings.",
         "table.evFiltered": "EV Filtered",
 
         "page.loadFailed": "Failed to load data",

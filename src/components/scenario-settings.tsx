@@ -39,6 +39,65 @@ import {
   WEATHER_VALUES,
 } from "@/lib/labels";
 
+/** 场景设置表单值；与计算层 Scenario 分离，保留界面使用的单选值。 */
+export interface ScenarioSettingsValue {
+  biomeId: string;
+  /** 时段（白天 / 黄昏 / 夜晚） */
+  timeOfDay: TimeOfDay;
+  /** 所在维度 */
+  dimension: DimensionId;
+  /** 天气 */
+  weather: Weather;
+  /** 生成位置 */
+  posType: string;
+  /** 已勾选的附近特殊方块特征 */
+  features: string[];
+  /** 脚下基底方块特征 */
+  baseFeature: string;
+  /** 天空可见性 */
+  sky: SkyVisibility;
+  /** 高度范围 */
+  height: HeightRange;
+  /** 天空暴露度 */
+  skyExposure: SkyExposure;
+  /** 环境亮度 */
+  localLight: LocalLightRange;
+  /** 月相 */
+  moonPhase: MoonPhase;
+  /** 是否在史莱姆区块 */
+  slimeChunk: SlimeChunk;
+  /** 所在结构，null 表示普通地形 */
+  structure: string | null;
+}
+
+/** 场景设置使用的静态数据与派生选项。 */
+export interface ScenarioSettingsOptions {
+  /** 可选群系列表（仅保留生成池涉及的群系） */
+  biomes: string[];
+  /** 群系 id -> 所属标签列表（数据文件派生） */
+  tagsByBiome: Record<string, string[]>;
+  /** 当前群系解析出的、生成池用到的标签 */
+  biomeTags: string[];
+  /** 可选附近特征 id 列表（由生成池数据派生） */
+  featureOptions: string[];
+  /** 可选脚下基底特征 id 列表（由生成池数据派生，不含 natural） */
+  baseFeatureOptions: string[];
+  /** 可选结构列表（由生成池数据派生） */
+  structureOptions: string[];
+  /** 特征 id -> 具体方块/tag 列表（悬浮提示显示） */
+  blockFeatures: Record<string, string[]>;
+}
+
+/** 场景设置组件参数。 */
+interface ScenarioSettingsProps {
+  /** 当前表单值 */
+  value: ScenarioSettingsValue;
+  /** 当前数据集可用的选项 */
+  options: ScenarioSettingsOptions;
+  /** 合并到当前表单值的局部更新 */
+  onChange: (patch: Partial<ScenarioSettingsValue>) => void;
+}
+
 /**
  * 特征选项芯片：悬浮显示该特征包含的具体方块/tag 列表（无方块列表时不显示悬浮）。
  * 用于「附近特殊方块」与「脚下基底方块」两组多/单选。
@@ -99,7 +158,9 @@ function BiomeSelector({
           }
           if (q.startsWith("#")) {
             const tagKw = q.slice(1);
-            return (tagsByBiome[biome] ?? []).some((tag) => tag.toLowerCase().includes(tagKw));
+            return (tagsByBiome[biome] ?? []).some((tag) =>
+              tag.toLowerCase().includes(tagKw),
+            );
           }
           return biome.toLowerCase().includes(q);
         }}
@@ -116,7 +177,9 @@ function BiomeSelector({
           </ComboboxList>
         </ComboboxContent>
       </Combobox>
-      <p className="text-xs text-muted-foreground">{t("biome.count", { count: biomes.length })}</p>
+      <p className="text-xs text-muted-foreground">
+        {t("biome.count", { count: biomes.length })}
+      </p>
     </div>
   );
 }
@@ -156,7 +219,13 @@ function OptionGroup<T extends string>({
       }}
     >
       {values.map((value) => (
-        <ToggleGroupItem key={value} value={value} variant="outline" size="sm" className="h-7 px-3">
+        <ToggleGroupItem
+          key={value}
+          value={value}
+          variant="outline"
+          size="sm"
+          className="h-7 px-3"
+        >
           {getLabel ? getLabel(value) : t(`${labelPrefix}.${value}`)}
         </ToggleGroupItem>
       ))}
@@ -214,100 +283,33 @@ function StructureSelector({
 }
 
 /** 场景设置内容组件（群系 / 光照 / 天气 / 生成位置 / 附近特殊方块） */
-export function ScenarioSettings({
-  biomes,
-  biomeId,
-  onBiomeChange,
-  tagsByBiome,
-  biomeTags,
-  timeOfDay,
-  onTimeOfDayChange,
-  dimension,
-  onDimensionChange,
-  weather,
-  onWeatherChange,
-  posType,
-  onPosTypeChange,
-  features,
-  featureOptions,
-  onFeaturesChange,
-  baseFeature,
-  baseFeatureOptions,
-  onBaseFeatureChange,
-  sky,
-  onSkyChange,
-  height,
-  onHeightChange,
-  skyExposure,
-  onSkyExposureChange,
-  localLight,
-  onLocalLightChange,
-  moonPhase,
-  onMoonPhaseChange,
-  slimeChunk,
-  onSlimeChunkChange,
-  structure,
-  structureOptions,
-  onStructureChange,
-  blockFeatures,
-}: {
-  /** 可选群系列表（仅保留生成池涉及的群系） */
-  biomes: string[];
-  /** 当前选中群系 id */
-  biomeId: string;
-  onBiomeChange: (biome: string) => void;
-  /** 群系 id -> 所属标签列表（数据文件派生） */
-  tagsByBiome: Record<string, string[]>;
-  /** 当前群系解析出的、生成池用到的标签 */
-  biomeTags: string[];
-  /** 时段（白天 / 夜晚）：决定 timeRange 昼夜匹配 */
-  timeOfDay: TimeOfDay;
-  onTimeOfDayChange: (timeOfDay: TimeOfDay) => void;
-  /** 所在维度：决定天空光层是否存在 */
-  dimension: DimensionId;
-  onDimensionChange: (dimension: DimensionId) => void;
-  weather: Weather;
-  onWeatherChange: (weather: Weather) => void;
-  /** 生成位置（宝点心周围地形同时存在多种时，应分次计算） */
-  posType: string;
-  onPosTypeChange: (posType: string) => void;
-  /** 已勾选的附近特殊方块特征 id 列表 */
-  features: string[];
-  /** 可选附近特征 id 列表（由生成池数据派生） */
-  featureOptions: string[];
-  onFeaturesChange: (features: string[]) => void;
-  /** 脚下基底方块特征 id（"natural" 表示普通自然方块） */
-  baseFeature: string;
-  /** 可选脚下基底特征 id 列表（由生成池数据派生，不含 natural） */
-  baseFeatureOptions: string[];
-  onBaseFeatureChange: (feature: string) => void;
-  /** 天空可见性（露天 / 不露天） */
-  sky: SkyVisibility;
-  onSkyChange: (sky: SkyVisibility) => void;
-  /** 高度范围（低处 / 高处 / 不限） */
-  height: HeightRange;
-  onHeightChange: (height: HeightRange) => void;
-  /** 天空暴露度（露天 / 半遮蔽 / 封闭）：决定静态天空光照区间 */
-  skyExposure: SkyExposure;
-  onSkyExposureChange: (skyExposure: SkyExposure) => void;
-  /** 环境亮度（明亮 / 昏暗 / 无）：决定 SpawnablePosition.light 区间 */
-  localLight: LocalLightRange;
-  onLocalLightChange: (localLight: LocalLightRange) => void;
-  /** 月相（满月 / 渐亏 / 新月 / 渐盈 / 不限） */
-  moonPhase: MoonPhase;
-  onMoonPhaseChange: (moonPhase: MoonPhase) => void;
-  /** 是否在史莱姆区块（是 / 否） */
-  slimeChunk: SlimeChunk;
-  onSlimeChunkChange: (slimeChunk: SlimeChunk) => void;
-  /** 所在结构 id/tag（null=普通地形） */
-  structure: string | null;
-  /** 可选结构列表（由生成池数据派生） */
-  structureOptions: string[];
-  onStructureChange: (structure: string | null) => void;
-  /** 特征 id -> 具体方块/tag 列表（悬浮提示显示） */
-  blockFeatures: Record<string, string[]>;
-}) {
+export function ScenarioSettings({ value, options, onChange }: ScenarioSettingsProps) {
   const { t } = useTranslation();
+  const {
+    biomeId,
+    timeOfDay,
+    dimension,
+    weather,
+    posType,
+    features,
+    baseFeature,
+    sky,
+    height,
+    skyExposure,
+    localLight,
+    moonPhase,
+    slimeChunk,
+    structure,
+  } = value;
+  const {
+    biomes,
+    tagsByBiome,
+    biomeTags,
+    featureOptions,
+    baseFeatureOptions,
+    structureOptions,
+    blockFeatures,
+  } = options;
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
@@ -316,7 +318,7 @@ export function ScenarioSettings({
         <BiomeSelector
           biomes={biomes}
           selected={biomeId}
-          onSelect={onBiomeChange}
+          onSelect={(nextBiomeId) => onChange({ biomeId: nextBiomeId })}
           tagsByBiome={tagsByBiome}
         />
         {biomeTags.length > 0 ? (
@@ -342,7 +344,7 @@ export function ScenarioSettings({
             values={DIMENSION_VALUES}
             labelPrefix="dimension"
             selected={dimension}
-            onSelect={onDimensionChange}
+            onSelect={(nextDimension) => onChange({ dimension: nextDimension })}
           />
         </div>
 
@@ -351,7 +353,7 @@ export function ScenarioSettings({
           <StructureSelector
             structureOptions={structureOptions}
             selected={structure}
-            onSelect={onStructureChange}
+            onSelect={(nextStructure) => onChange({ structure: nextStructure })}
           />
         </div>
 
@@ -361,7 +363,7 @@ export function ScenarioSettings({
             values={SKY_VISIBILITY_VALUES}
             labelPrefix="sky"
             selected={sky}
-            onSelect={onSkyChange}
+            onSelect={(nextSky) => onChange({ sky: nextSky })}
           />
         </div>
 
@@ -372,7 +374,7 @@ export function ScenarioSettings({
             values={HEIGHT_RANGE_VALUES}
             labelPrefix="height"
             selected={height}
-            onSelect={onHeightChange}
+            onSelect={(nextHeight) => onChange({ height: nextHeight })}
           />
         </div>
 
@@ -382,7 +384,7 @@ export function ScenarioSettings({
             values={POSITION_VALUES}
             labelPrefix="position"
             selected={posType}
-            onSelect={onPosTypeChange}
+            onSelect={(nextPosType) => onChange({ posType: nextPosType })}
           />
         </div>
 
@@ -392,7 +394,7 @@ export function ScenarioSettings({
             values={SLIME_CHUNK_VALUES}
             labelPrefix="slimeChunk"
             selected={slimeChunk}
-            onSelect={onSlimeChunkChange}
+            onSelect={(nextSlimeChunk) => onChange({ slimeChunk: nextSlimeChunk })}
           />
         </div>
       </div>
@@ -404,11 +406,15 @@ export function ScenarioSettings({
           <ToggleGroup
             multiple
             value={features}
-            onValueChange={(values) => onFeaturesChange(values)}
+            onValueChange={(nextFeatures) => onChange({ features: nextFeatures })}
             className="flex-wrap gap-1"
           >
             {featureOptions.map((feature) => (
-              <FeatureToggle key={feature} value={feature} blocks={blockFeatures[feature] ?? []} />
+              <FeatureToggle
+                key={feature}
+                value={feature}
+                blocks={blockFeatures[feature] ?? []}
+              />
             ))}
           </ToggleGroup>
         </div>
@@ -419,14 +425,18 @@ export function ScenarioSettings({
             value={[baseFeature]}
             onValueChange={(values) => {
               if (values.length > 0) {
-                onBaseFeatureChange(values[0]);
+                onChange({ baseFeature: values[0] });
               }
             }}
             className="flex-wrap gap-1"
           >
             <FeatureToggle value="natural" blocks={[]} />
             {baseFeatureOptions.map((feature) => (
-              <FeatureToggle key={feature} value={feature} blocks={blockFeatures[feature] ?? []} />
+              <FeatureToggle
+                key={feature}
+                value={feature}
+                blocks={blockFeatures[feature] ?? []}
+              />
             ))}
           </ToggleGroup>
         </div>
@@ -437,7 +447,7 @@ export function ScenarioSettings({
             values={SKY_EXPOSURE_VALUES}
             labelPrefix="skyExposure"
             selected={skyExposure}
-            onSelect={onSkyExposureChange}
+            onSelect={(nextSkyExposure) => onChange({ skyExposure: nextSkyExposure })}
           />
         </div>
 
@@ -447,7 +457,7 @@ export function ScenarioSettings({
             values={LOCAL_LIGHT_VALUES}
             labelPrefix="localLight"
             selected={localLight}
-            onSelect={onLocalLightChange}
+            onSelect={(nextLocalLight) => onChange({ localLight: nextLocalLight })}
           />
         </div>
 
@@ -457,7 +467,7 @@ export function ScenarioSettings({
             values={WEATHER_VALUES}
             labelPrefix="weather"
             selected={weather}
-            onSelect={onWeatherChange}
+            onSelect={(nextWeather) => onChange({ weather: nextWeather })}
           />
         </div>
 
@@ -467,7 +477,7 @@ export function ScenarioSettings({
             values={TIME_OF_DAY_VALUES}
             labelPrefix="timeOfDay"
             selected={timeOfDay}
-            onSelect={onTimeOfDayChange}
+            onSelect={(nextTimeOfDay) => onChange({ timeOfDay: nextTimeOfDay })}
           />
         </div>
 
@@ -477,7 +487,7 @@ export function ScenarioSettings({
             values={MOON_PHASE_VALUES}
             labelPrefix="moonPhase"
             selected={moonPhase}
-            onSelect={onMoonPhaseChange}
+            onSelect={(nextMoonPhase) => onChange({ moonPhase: nextMoonPhase })}
           />
         </div>
       </div>

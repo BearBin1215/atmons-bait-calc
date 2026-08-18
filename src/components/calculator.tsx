@@ -2,37 +2,52 @@
  * 计算器主组件：加载静态数据，维护材料与场景（群系 / 光照 / 天气 / 生成位置）
  * 状态，计算吸引效果与影响结果，并组装页面各区块。
  */
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation, Trans } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Empty, EmptyDescription, EmptyTitle } from "@/components/ui/empty";
 import { Spinner } from "@/components/ui/spinner";
 import { normalizeLocale } from "@/lib/i18n";
-import {
-  computeImpact,
-  resolveLure,
-  type Scenario,
-  type Weather,
-  type HeightRange,
-  type SkyVisibility,
-  type SkyExposure,
-  type LocalLightRange,
-  type DimensionId,
-  type MoonPhase,
-  type SlimeChunk,
-  type TimeOfDay,
-} from "@/lib/calc";
+import { computeImpact, resolveLure, type Scenario } from "@/lib/calc";
 import { loadAllTheMonsData } from "@/lib/loader";
 import type { AllTheMonsData } from "@/lib/types";
 import { type UiLabels, extLink } from "@/components/shared";
 import { MaterialSelector } from "@/components/material-selector";
-import { ScenarioSettings } from "@/components/scenario-settings";
+import {
+  ScenarioSettings,
+  type ScenarioSettingsOptions,
+  type ScenarioSettingsValue,
+} from "@/components/scenario-settings";
 import { LureSummary, hasLureEffects } from "@/components/lure-summary";
 import { ImpactTable } from "@/components/impact-table";
 
 /** 材料槽位上限（对应游戏内烹饪锅的调料槽数量） */
 const MAX_MATERIALS = 3;
+
+/** 场景设置表单默认值。 */
+const DEFAULT_SCENARIO_SETTINGS: ScenarioSettingsValue = {
+  biomeId: "minecraft:plains",
+  timeOfDay: "day",
+  dimension: "minecraft:overworld",
+  weather: "clear",
+  posType: "grounded",
+  features: [],
+  baseFeature: "natural",
+  sky: "open",
+  height: "high",
+  skyExposure: "open",
+  localLight: "bright",
+  moonPhase: "any",
+  slimeChunk: "no",
+  structure: null,
+};
 
 export default function Calculator() {
   const { t, i18n } = useTranslation();
@@ -41,39 +56,23 @@ export default function Calculator() {
   const [data, setData] = useState<AllTheMonsData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
-  const [biomeId, setBiomeId] = useState("minecraft:plains");
-  /** 时段（单选，默认白天） */
-  const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>("day");
-  /** 所在维度（标准维度，决定天空光层是否存在） */
-  const [dimension, setDimension] = useState<DimensionId>("minecraft:overworld");
-  const [weather, setWeather] = useState<Weather>("clear");
-  /** 生成位置（单选：宝点心周围地形同时存在多种时，应分次计算） */
-  const [posType, setPosType] = useState<string>("grounded");
-  /** 附近存在的特殊方块特征（多选，默认普通自然地形） */
-  const [features, setFeatures] = useState<string[]>([]);
-  /** 脚下基底方块（单选，默认自然方块） */
-  const [baseFeature, setBaseFeature] = useState<string>("natural");
-  /** 天空可见性（单选，默认露天） */
-  const [sky, setSky] = useState<SkyVisibility>("open");
-  /** 高度范围（单选，默认低处） */
-  const [height, setHeight] = useState<HeightRange>("low");
-  /** 天空暴露度（单选，默认露天） */
-  const [skyExposure, setSkyExposure] = useState<SkyExposure>("open");
-  /** 环境亮度（单选，默认明亮） */
-  const [localLight, setLocalLight] = useState<LocalLightRange>("bright");
-  /** 月相（单选，默认不限） */
-  const [moonPhase, setMoonPhase] = useState<MoonPhase>("any");
-  /** 是否在史莱姆区块（单选，默认否） */
-  const [slimeChunk, setSlimeChunk] = useState<SlimeChunk>("no");
-  /** 所在结构 id/tag（null=普通地形） */
-  const [structure, setStructure] = useState<string | null>(null);
+  const [scenarioSettings, setScenarioSettings] = useState<ScenarioSettingsValue>(
+    DEFAULT_SCENARIO_SETTINGS,
+  );
 
   const [reloadKey, setReloadKey] = useState(0);
+
+  /** 将局部场景表单更新合并到当前值。 */
+  const updateScenarioSettings = useCallback((patch: Partial<ScenarioSettingsValue>) => {
+    setScenarioSettings((current) => ({ ...current, ...patch }));
+  }, []);
 
   useEffect(() => {
     loadAllTheMonsData()
       .then((d) => setData(d))
-      .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)));
+      .catch((err: unknown) =>
+        setError(err instanceof Error ? err.message : String(err)),
+      );
   }, [reloadKey]);
 
   const poolTagSet = useMemo(() => {
@@ -98,14 +97,18 @@ export default function Calculator() {
     if (!data) {
       return [];
     }
-    return (data.biomeTagReverse[biomeId] ?? []).filter((tag) => poolTagSet.has(tag));
-  }, [data, biomeId, poolTagSet]);
+    return (data.biomeTagReverse[scenarioSettings.biomeId] ?? []).filter((tag) =>
+      poolTagSet.has(tag),
+    );
+  }, [data, poolTagSet, scenarioSettings.biomeId]);
 
   const biomeOptions = useMemo(
     () =>
       data
         ? Object.keys(data.biomeTagReverse)
-            .filter((b) => (data.biomeTagReverse[b] ?? []).some((tag) => poolTagSet.has(tag)))
+            .filter((b) =>
+              (data.biomeTagReverse[b] ?? []).some((tag) => poolTagSet.has(tag)),
+            )
             .sort()
         : [],
     [data, poolTagSet],
@@ -114,36 +117,21 @@ export default function Calculator() {
   const scenario: Scenario = useMemo(
     () => ({
       biomeTags: resolvedBiomeTags,
-      timeOfDay,
-      dimension,
-      weather,
-      posTypes: [posType],
-      features,
-      baseFeatures: [baseFeature],
-      sky,
-      height,
-      skyExposure,
-      localLight,
-      moonPhase,
-      slimeChunk,
-      structure,
+      timeOfDay: scenarioSettings.timeOfDay,
+      dimension: scenarioSettings.dimension,
+      weather: scenarioSettings.weather,
+      posTypes: [scenarioSettings.posType],
+      features: scenarioSettings.features,
+      baseFeatures: [scenarioSettings.baseFeature],
+      sky: scenarioSettings.sky,
+      height: scenarioSettings.height,
+      skyExposure: scenarioSettings.skyExposure,
+      localLight: scenarioSettings.localLight,
+      moonPhase: scenarioSettings.moonPhase,
+      slimeChunk: scenarioSettings.slimeChunk,
+      structure: scenarioSettings.structure,
     }),
-    [
-      resolvedBiomeTags,
-      timeOfDay,
-      dimension,
-      weather,
-      posType,
-      features,
-      baseFeature,
-      sky,
-      height,
-      skyExposure,
-      localLight,
-      moonPhase,
-      slimeChunk,
-      structure,
-    ],
+    [resolvedBiomeTags, scenarioSettings],
   );
 
   /** 生成池中出现过的特征 id 列表（供场景设置勾选：附近一组、脚下基底一组） */
@@ -194,7 +182,24 @@ export default function Calculator() {
     return [...set];
   }, [data]);
 
-  const lure = useMemo(() => (data ? resolveLure(selected, data) : null), [data, selected]);
+  /** 场景组件使用的数据选项，集中传递以保持组件接口稳定。 */
+  const scenarioSettingOptions: ScenarioSettingsOptions = useMemo(
+    () => ({
+      biomes: biomeOptions,
+      tagsByBiome: data?.biomeTagReverse ?? {},
+      biomeTags: resolvedBiomeTags,
+      featureOptions: featureOptions.nearbyOptions,
+      baseFeatureOptions: featureOptions.baseOptions,
+      structureOptions,
+      blockFeatures: data?.blockFeatures ?? {},
+    }),
+    [biomeOptions, data, featureOptions, resolvedBiomeTags, structureOptions],
+  );
+
+  const lure = useMemo(
+    () => (data ? resolveLure(selected, data) : null),
+    [data, selected],
+  );
 
   const impact = useMemo(
     () => (data ? computeImpact(data, scenario, selected) : null),
@@ -303,7 +308,9 @@ export default function Calculator() {
       <Card>
         <CardHeader>
           <CardTitle>{t("material.title")}</CardTitle>
-          <CardDescription>{t("material.description", { max: MAX_MATERIALS })}</CardDescription>
+          <CardDescription>
+            {t("material.description", { max: MAX_MATERIALS })}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <MaterialSelector
@@ -326,41 +333,9 @@ export default function Calculator() {
         </CardHeader>
         <CardContent>
           <ScenarioSettings
-            biomes={biomeOptions}
-            biomeId={biomeId}
-            onBiomeChange={setBiomeId}
-            tagsByBiome={data.biomeTagReverse}
-            biomeTags={resolvedBiomeTags}
-            timeOfDay={timeOfDay}
-            onTimeOfDayChange={setTimeOfDay}
-            dimension={dimension}
-            onDimensionChange={setDimension}
-            weather={weather}
-            onWeatherChange={setWeather}
-            posType={posType}
-            onPosTypeChange={setPosType}
-            features={features}
-            featureOptions={featureOptions.nearbyOptions}
-            onFeaturesChange={setFeatures}
-            baseFeature={baseFeature}
-            baseFeatureOptions={featureOptions.baseOptions}
-            onBaseFeatureChange={setBaseFeature}
-            sky={sky}
-            onSkyChange={setSky}
-            height={height}
-            onHeightChange={setHeight}
-            skyExposure={skyExposure}
-            onSkyExposureChange={setSkyExposure}
-            localLight={localLight}
-            onLocalLightChange={setLocalLight}
-            moonPhase={moonPhase}
-            onMoonPhaseChange={setMoonPhase}
-            slimeChunk={slimeChunk}
-            onSlimeChunkChange={setSlimeChunk}
-            structure={structure}
-            structureOptions={structureOptions}
-            onStructureChange={setStructure}
-            blockFeatures={data.blockFeatures}
+            value={scenarioSettings}
+            options={scenarioSettingOptions}
+            onChange={updateScenarioSettings}
           />
         </CardContent>
       </Card>

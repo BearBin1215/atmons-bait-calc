@@ -43,13 +43,16 @@ export function LureSummary({
 
   /** 单条效果行：效果类型名 + 子类别 + 倍率（+ 触发概率与行末提示） */
   const renderRow = (effect: BaitEffect, key: string, hint?: ReactNode) => {
-    const sub = effect.subcategory ? categoryLabel(effect.type, effect.subcategory, labels) : "";
+    const sub = effect.subcategory
+      ? categoryLabel(effect.type, effect.subcategory, labels)
+      : "";
     return (
       <li key={key} className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
         <span className="text-muted-foreground">{t(`effect.${effect.type}`)}</span>
         {sub && <span>{sub}</span>}
         {effect.value > 0 && <span>×{effect.value}</span>}
-        {effect.chance < 1 && t("lure.trigger", { chance: (effect.chance * 100).toFixed(0) })}
+        {effect.chance < 1 &&
+          t("lure.trigger", { chance: (effect.chance * 100).toFixed(0) })}
         {hint}
       </li>
     );
@@ -59,18 +62,24 @@ export function LureSummary({
     <ul className="space-y-1 text-sm">
       {lure.rarityTier > 0 && (
         <li className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-          <span className="text-muted-foreground">{t("effect.cobblemon:rarity_bucket")}</span>
+          <span className="text-muted-foreground">
+            {t("effect.cobblemon:rarity_bucket")}
+          </span>
           <span>+{lure.rarityTier}</span>
         </li>
       )}
       {lure.typingEffects.map((e, i) =>
         renderRow(e, `${e.type}:${e.subcategory}:${i}`, hintIcon(t("lure.typingHint"))),
       )}
-      {lure.eggGroupEffects.map((e, i) => renderRow(e, `${e.type}:${e.subcategory}:${i}`))}
+      {lure.eggGroupEffects.map((e, i) =>
+        renderRow(e, `${e.type}:${e.subcategory}:${i}`),
+      )}
       {lure.evEffects.map((e, i) =>
         renderRow(e, `${e.type}:${e.subcategory}:${i}`, hintIcon(t("lure.evNote"))),
       )}
-      {lure.biteTimeEffects.map((e, i) => renderRow(e, `${e.type}:${e.subcategory}:${i}`))}
+      {lure.biteTimeEffects.map((e, i) =>
+        renderRow(e, `${e.type}:${e.subcategory}:${i}`),
+      )}
       {lure.qualityEffects.map((e, i) => renderRow(e, `${e.type}:${e.subcategory}:${i}`))}
     </ul>
   );

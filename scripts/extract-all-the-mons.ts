@@ -354,9 +354,13 @@ const VANILLA_TAG_BIOMES: Record<string, string[]> = {
     "small_end_islands",
     "the_end",
   ].map(V),
-  "#c:is_end": ["end_barrens", "end_highlands", "end_midlands", "small_end_islands", "the_end"].map(
-    V,
-  ),
+  "#c:is_end": [
+    "end_barrens",
+    "end_highlands",
+    "end_midlands",
+    "small_end_islands",
+    "the_end",
+  ].map(V),
   "#c:is_floral": ["cherry_grove", "flower_forest", "meadow", "sunflower_plains"].map(V),
   "#c:is_flower_forest": ["flower_forest"].map(V),
   "#c:flower_forest": ["flower_forest"].map(V),
@@ -468,7 +472,13 @@ const VANILLA_TAG_BIOMES: Record<string, string[]> = {
   "#c:is_plateau": ["savanna_plateau", "wooded_badlands"].map(V),
   "#minecraft:is_river": ["frozen_river", "river"].map(V),
   "#c:is_river": ["frozen_river", "river"].map(V),
-  "#c:is_sandy": ["badlands", "beach", "desert", "eroded_badlands", "wooded_badlands"].map(V),
+  "#c:is_sandy": [
+    "badlands",
+    "beach",
+    "desert",
+    "eroded_badlands",
+    "wooded_badlands",
+  ].map(V),
   "#minecraft:is_savanna": ["savanna", "savanna_plateau", "windswept_savanna"].map(V),
   "#c:is_savanna": ["savanna", "savanna_plateau", "windswept_savanna"].map(V),
   "#c:is_snowy": [
@@ -526,11 +536,19 @@ const VANILLA_TAG_BIOMES: Record<string, string[]> = {
     "snowy_taiga",
     "taiga",
   ].map(V),
-  "#c:is_taiga": ["old_growth_pine_taiga", "old_growth_spruce_taiga", "snowy_taiga", "taiga"].map(
-    V,
-  ),
+  "#c:is_taiga": [
+    "old_growth_pine_taiga",
+    "old_growth_spruce_taiga",
+    "snowy_taiga",
+    "taiga",
+  ].map(V),
   "#c:is_underground": ["deep_dark", "dripstone_caves", "lush_caves"].map(V),
-  "#c:is_wasteland": ["badlands", "basalt_deltas", "eroded_badlands", "wooded_badlands"].map(V),
+  "#c:is_wasteland": [
+    "badlands",
+    "basalt_deltas",
+    "eroded_badlands",
+    "wooded_badlands",
+  ].map(V),
   "#c:is_windswept": [
     "windswept_forest",
     "windswept_gravelly_hills",
@@ -751,7 +769,12 @@ const BLOCK_FEATURE_GROUPS: Record<string, string[]> = {
     "minecraft:medium_amethyst_bud",
     "minecraft:small_amethyst_bud",
   ],
-  wool: ["minecraft:*_wool", "minecraft:*_carpet", "#minecraft:wool", "#minecraft:wool_carpets"],
+  wool: [
+    "minecraft:*_wool",
+    "minecraft:*_carpet",
+    "#minecraft:wool",
+    "#minecraft:wool_carpets",
+  ],
   machines: [
     "create:cogwheel",
     "create:large_cogwheel",
@@ -905,7 +928,10 @@ function parseEffects(raw: unknown): BaitEffect[] {
  * baitId 使用相对路径（不含扩展名），如 berries/pecha_berry、fruits/allthemodium_apple；
  * 覆盖数据中的同名条目会覆盖基础数据。
  */
-function loadBaitEffects(dataDir: string, overridesDir: string | null): Map<string, SpawnBaitRaw> {
+function loadBaitEffects(
+  dataDir: string,
+  overridesDir: string | null,
+): Map<string, SpawnBaitRaw> {
   const map = new Map<string, SpawnBaitRaw>();
   const dirs: string[] = [];
   dirs.push(join(dataDir, "spawn_bait_effects"));
@@ -957,7 +983,10 @@ function loadBerries(dataDir: string): Map<string, BerryRaw> {
 }
 
 /** 读取 seasonings 目录，返回 seasoningId -> { item, effects }（仅保留含 baitEffects 的） */
-function loadSeasonings(dataDir: string, overridesDir: string | null): Map<string, SeasoningRaw> {
+function loadSeasonings(
+  dataDir: string,
+  overridesDir: string | null,
+): Map<string, SeasoningRaw> {
   const map = new Map<string, SeasoningRaw>();
   const dirs: string[] = [];
   dirs.push(join(dataDir, "seasonings"));
@@ -967,7 +996,11 @@ function loadSeasonings(dataDir: string, overridesDir: string | null): Map<strin
   for (const dir of dirs) {
     for (const file of collectJsonFiles(dir)) {
       const seasoning = readJson(file);
-      if (seasoning === null || typeof seasoning !== "object" || Array.isArray(seasoning)) {
+      if (
+        seasoning === null ||
+        typeof seasoning !== "object" ||
+        Array.isArray(seasoning)
+      ) {
         continue;
       }
       const effects = parseEffects((seasoning as { baitEffects?: unknown }).baitEffects);
@@ -985,7 +1018,10 @@ function loadSeasonings(dataDir: string, overridesDir: string | null): Map<strin
 }
 
 /** 读取 species 数据，返回 id -> { names{zh,en}, types, eggGroups, evYield } */
-function loadSpecies(dataDir: string, lang: Record<string, string>): Map<string, SpeciesRaw> {
+function loadSpecies(
+  dataDir: string,
+  lang: Record<string, string>,
+): Map<string, SpeciesRaw> {
   const map = new Map<string, SpeciesRaw>();
   const dir = join(dataDir, "species");
   for (const file of collectJsonFiles(dir)) {
@@ -1010,7 +1046,9 @@ function loadSpecies(dataDir: string, lang: Record<string, string>): Map<string,
     }
     const ev: Record<string, number> = {};
     if (speciesData.evYield !== null && speciesData.evYield !== undefined) {
-      for (const [stat, value] of Object.entries(speciesData.evYield as Record<string, unknown>)) {
+      for (const [stat, value] of Object.entries(
+        speciesData.evYield as Record<string, unknown>,
+      )) {
         if (Number(value) > 0) {
           ev[stat] = Number(value);
         }
@@ -1040,7 +1078,10 @@ function loadSpecies(dataDir: string, lang: Record<string, string>): Map<string,
 function loadSpawnDetailPresets(
   dataDir: string,
   overridesDir: string | null,
-): Map<string, { condition: Record<string, unknown>; anticondition: Record<string, unknown> }> {
+): Map<
+  string,
+  { condition: Record<string, unknown>; anticondition: Record<string, unknown> }
+> {
   const map = new Map<
     string,
     { condition: Record<string, unknown>; anticondition: Record<string, unknown> }
@@ -1231,7 +1272,8 @@ function loadSpawnPool(
       const positiveCondition = conditionSnapshot(mergedCond);
       const antiConditions = antiConditionObjects.map(conditionSnapshot);
       const hasLureCondition =
-        (mergedCond.minLureLevel ?? null) !== null || (mergedCond.maxLureLevel ?? null) !== null;
+        (mergedCond.minLureLevel ?? null) !== null ||
+        (mergedCond.maxLureLevel ?? null) !== null;
 
       entries.push({
         p,
@@ -1410,7 +1452,9 @@ function loadBiomeTagContents(dataRoots: string[]): Record<string, string[]> {
  * 注：指向外部数据包（如 #minecraft:is_jungle）的嵌套标签在本仓库内无法展开，
  * 因此仅经由外部标签引用的原版群系不会出现在结果中。
  */
-function buildBiomeTagReverse(contents: Record<string, string[]>): Record<string, string[]> {
+function buildBiomeTagReverse(
+  contents: Record<string, string[]>,
+): Record<string, string[]> {
   const nestedCache = new Map<string, Set<string>>();
   const resolveTag = (tag: string, stack: Set<string>): Set<string> => {
     const cached = nestedCache.get(tag);
@@ -1548,7 +1592,10 @@ function buildMaterials(
       id,
       kind: "seasoning",
       names: {
-        zh: itemZhLabel(lang, itemId) ?? itemZhLabel(lang, seasoningId) ?? humanize(seasoningId),
+        zh:
+          itemZhLabel(lang, itemId) ??
+          itemZhLabel(lang, seasoningId) ??
+          humanize(seasoningId),
         en:
           itemLangLabel(enLang, itemId) ??
           itemLangLabel(enLang, seasoningId) ??
@@ -1584,7 +1631,12 @@ function main(): void {
   const species = loadSpecies(DATA_DIR, lang);
   const spawnDetailPresets = loadSpawnDetailPresets(DATA_DIR, overridesDir);
   const featureBlocks = new Map<string, Set<string>>();
-  const spawnPool = loadSpawnPool(DATA_DIR, overridesDir, spawnDetailPresets, featureBlocks);
+  const spawnPool = loadSpawnPool(
+    DATA_DIR,
+    overridesDir,
+    spawnDetailPresets,
+    featureBlocks,
+  );
   // 群系标签内容：基础模组（cobblemon 命名空间）+ All the Mons 数据包根目录
   const overridesDataRoot = overridesDir ? resolve(overridesDir, "..") : null;
   const biomeTagContents = loadBiomeTagContents(

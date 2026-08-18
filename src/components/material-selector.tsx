@@ -50,7 +50,12 @@ function MaterialIcon({ material }: { material: MaterialInfo }) {
     return null;
   }
   return (
-    <img src={url} alt="" loading="lazy" className="size-4 shrink-0 [image-rendering:pixelated]" />
+    <img
+      src={url}
+      alt=""
+      loading="lazy"
+      className="size-4 shrink-0 [image-rendering:pixelated]"
+    />
   );
 }
 
@@ -153,7 +158,8 @@ export function MaterialSelector({
         if (category === "ev") {
           list = [...list].sort(
             (a, b) =>
-              (EV_STAT_ORDER[a.detail[0] ?? ""] ?? 99) - (EV_STAT_ORDER[b.detail[0] ?? ""] ?? 99),
+              (EV_STAT_ORDER[a.detail[0] ?? ""] ?? 99) -
+              (EV_STAT_ORDER[b.detail[0] ?? ""] ?? 99),
           );
         }
         return (

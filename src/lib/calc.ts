@@ -20,6 +20,7 @@ import type {
   SpawnConditionSnapshot,
   SpeciesInfo,
   WeightMultiplier,
+  WeightMultiplierCondition,
 } from "./types";
 
 /**
@@ -107,7 +108,10 @@ function getMaterialEffects(material: MaterialInfo, data: AllTheMonsData): BaitE
 export type TimeOfDay = "day" | "dusk" | "night";
 
 /** 标准 Minecraft 维度 id；天空光层是否存在由维度类型决定 */
-export type DimensionId = "minecraft:overworld" | "minecraft:the_nether" | "minecraft:the_end";
+export type DimensionId =
+  | "minecraft:overworld"
+  | "minecraft:the_nether"
+  | "minecraft:the_end";
 
 /** 场景天气 */
 export type Weather = "clear" | "rain" | "thunder";
@@ -156,7 +160,10 @@ const SKY_EXPOSURES: Record<SkyExposure, { minSkyLight: number; maxSkyLight: num
 };
 
 /** 各环境亮度范围假定的区间（0~15，与条目区间用重叠判定） */
-const LOCAL_LIGHT_RANGES: Record<LocalLightRange, { minLight: number; maxLight: number }> = {
+const LOCAL_LIGHT_RANGES: Record<
+  LocalLightRange,
+  { minLight: number; maxLight: number }
+> = {
   bright: { minLight: 8, maxLight: 15 },
   dim: { minLight: 1, maxLight: 7 },
   dark: { minLight: 0, maxLight: 0 },
@@ -439,7 +446,10 @@ function rangesOverlap(aMin: number, aMax: number, bMin: number, bMax: number): 
 }
 
 /** 将一个条件对象的时间范围与场景时段做存在性匹配。 */
-function timeRangeMatches(timeRange: string | null | undefined, timeOfDay: TimeOfDay): boolean {
+function timeRangeMatches(
+  timeRange: string | null | undefined,
+  timeOfDay: TimeOfDay,
+): boolean {
   if (!timeRange || timeRange === "any") {
     return true;
   }
@@ -491,7 +501,10 @@ function conditionMatchesScenario(
   if (condition.biomes.length > 0 && !condition.biomes.some((b) => tagSet.has(b))) {
     return false;
   }
-  if (condition.dimensions.length > 0 && !condition.dimensions.includes(scenario.dimension)) {
+  if (
+    condition.dimensions.length > 0 &&
+    !condition.dimensions.includes(scenario.dimension)
+  ) {
     return false;
   }
   const skyRange = DIMENSIONS_WITH_SKY_LIGHT.has(scenario.dimension)
@@ -591,7 +604,10 @@ function conditionMatchesScenario(
  * 时段 timeRange（按 Cobblemon tick 区间求交）、月相（编号集合交集）、
  * 史莱姆区块按场景假设过滤。
  */
-export function filterScenarioPool(data: AllTheMonsData, scenario: Scenario): PoolEntry[] {
+export function filterScenarioPool(
+  data: AllTheMonsData,
+  scenario: Scenario,
+): PoolEntry[] {
   const posSet = new Set(scenario.posTypes);
   const tagSet = new Set(scenario.biomeTags);
   const nearbySet = new Set(scenario.features ?? []);
@@ -603,7 +619,15 @@ export function filterScenarioPool(data: AllTheMonsData, scenario: Scenario): Po
     if (!posSet.has(entry.pos)) {
       return false;
     }
-    if (!conditionMatchesScenario(entryCondition(entry), scenario, tagSet, nearbySet, baseSet)) {
+    if (
+      !conditionMatchesScenario(
+        entryCondition(entry),
+        scenario,
+        tagSet,
+        nearbySet,
+        baseSet,
+      )
+    ) {
       return false;
     }
     if (
@@ -618,40 +642,50 @@ export function filterScenarioPool(data: AllTheMonsData, scenario: Scenario): Po
 }
 
 /**
- * 判断单个权重倍率的条件是否由场景满足（condition 全部满足且 anticondition 未命中）。
- * 源码位置：api/spawning/multiplier/WeightMultiplier.kt:33-37（affectWeight）--
- * conditions 为空或任一满足，且 anticonditions 为空或均不满足时乘以 multiplier；
- * 单个条件的判定复用 SpawningCondition.fits（同 filterScenarioPool 引用）。
+ * 判断权重倍率的简化条件（condition / anticondition）是否由场景满足。
+ * 权重倍率仅携带 isRaining / isThundering / timeRange / biomes 四个字段，
+ * 字段缺省（undefined / 空列表）视为不限制。
  */
-export function weightMultiplierApplies(wm: WeightMultiplier, scenario: Scenario): boolean {
-  const cond = wm.condition;
-  const anti = wm.anticondition;
+function simpleConditionMatches(
+  cond: WeightMultiplierCondition,
+  scenario: Scenario,
+): boolean {
   const raining = isRaining(scenario.weather);
   const thundering = scenario.weather === "thunder";
-
-  const condOk =
+  return (
     (cond.isRaining === undefined || cond.isRaining === raining) &&
     (cond.isThundering === undefined || cond.isThundering === thundering) &&
     timeRangeMatches(cond.timeRange, scenario.timeOfDay) &&
     (cond.biomes === undefined ||
       cond.biomes.length === 0 ||
-      cond.biomes.some((b) => scenario.biomeTags.includes(b)));
+      cond.biomes.some((b) => scenario.biomeTags.includes(b)))
+  );
+}
 
-  const hasAntiCondition =
-    anti.isRaining !== undefined ||
-    anti.isThundering !== undefined ||
-    anti.timeRange !== undefined ||
-    (anti.biomes !== undefined && anti.biomes.length > 0);
+/** 判断权重倍率条件是否携带任何限制字段（全缺省 / 空列表视为无条件） */
+function weightMultiplierHasCondition(cond: WeightMultiplierCondition): boolean {
+  return (
+    cond.isRaining !== undefined ||
+    cond.isThundering !== undefined ||
+    cond.timeRange !== undefined ||
+    (cond.biomes !== undefined && cond.biomes.length > 0)
+  );
+}
+
+/**
+ * 判断单个权重倍率的条件是否由场景满足（condition 全部满足且 anticondition 未命中）。
+ * 源码位置：api/spawning/multiplier/WeightMultiplier.kt:33-37（affectWeight）--
+ * conditions 为空或任一满足，且 anticonditions 为空或均不满足时乘以 multiplier；
+ * 单个条件的判定复用 SpawningCondition.fits（同 filterScenarioPool 引用）。
+ */
+export function weightMultiplierApplies(
+  wm: WeightMultiplier,
+  scenario: Scenario,
+): boolean {
+  const anti = wm.anticondition;
   const antiSatisfied =
-    hasAntiCondition &&
-    (anti.isRaining === undefined || anti.isRaining === raining) &&
-    (anti.isThundering === undefined || anti.isThundering === thundering) &&
-    timeRangeMatches(anti.timeRange, scenario.timeOfDay) &&
-    (anti.biomes === undefined ||
-      anti.biomes.length === 0 ||
-      anti.biomes.some((b) => scenario.biomeTags.includes(b)));
-
-  return condOk && !antiSatisfied;
+    weightMultiplierHasCondition(anti) && simpleConditionMatches(anti, scenario);
+  return simpleConditionMatches(wm.condition, scenario) && !antiSatisfied;
 }
 
 /**
@@ -849,7 +883,8 @@ export function computeImpact(
     const bucketWeightAfter = bucketAfter[entry.entry.bucket] ?? 0;
     const sums = sumByBucket.get(entry.entry.bucket) ?? { base: 0, after: 0 };
 
-    const pBefore = sums.base > 0 ? (bucketWeightBefore / 100) * (entry.baseWeight / sums.base) : 0;
+    const pBefore =
+      sums.base > 0 ? (bucketWeightBefore / 100) * (entry.baseWeight / sums.base) : 0;
     const pAfter =
       sums.after > 0 ? (bucketWeightAfter / 100) * (entry.afterWeight / sums.after) : 0;
 

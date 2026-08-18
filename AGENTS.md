@@ -94,7 +94,7 @@ public/
 ├── poke_snack.png        # 站点图标（来自 Cobblemon 模组，MPL-2.0 许可）
 └── ICON_LICENSE.txt      # 图标许可声明
 scripts/
-└── extract-all-the-mons.ts  # 数据抓取脚本（与旧工程完全一致）
+└── extract-all-the-mons.ts  # 数据抓取脚本
 .github/workflows/deploy.yml # push main 自动构建部署到 GitHub Pages
 ```
 

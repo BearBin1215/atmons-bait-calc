@@ -56,6 +56,7 @@ i18n.use(initReactI18next).init({
 
         "scenario.title": "场景设置",
         "scenario.description": "选择所在群系，可通过名字或 #标签 筛选。",
+        "scenario.reset": "重置",
         "scenario.biome": "群系",
         "scenario.tags": "解析出 {{count}} 个群系标签：",
         "scenario.tagsEmpty": "该群系无法解析出刷新相关标签，结果将为空。",
@@ -231,6 +232,7 @@ i18n.use(initReactI18next).init({
 
         "scenario.title": "Scenario Settings",
         "scenario.description": "Select your biome. Filter by name or #tag.",
+        "scenario.reset": "Reset",
         "scenario.biome": "Biome",
         "scenario.tags": "{{count}} biome tags resolved:",
         "scenario.tagsEmpty":

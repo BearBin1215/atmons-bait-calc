@@ -4,6 +4,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation, Trans } from "react-i18next";
+import { RotateCcwIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -31,6 +32,9 @@ import { ImpactTable } from "@/components/impact-table";
 /** 材料槽位上限（对应游戏内烹饪锅的调料槽数量） */
 const MAX_MATERIALS = 3;
 
+/** 场景设置 localStorage 持久化键 */
+const SCENARIO_SETTINGS_STORAGE_KEY = "atmons-bait-calc:scenario-settings";
+
 /** 场景设置表单默认值。 */
 const DEFAULT_SCENARIO_SETTINGS: ScenarioSettingsValue = {
   biomeId: "minecraft:plains",
@@ -49,6 +53,28 @@ const DEFAULT_SCENARIO_SETTINGS: ScenarioSettingsValue = {
   structure: null,
 };
 
+/**
+ * 从 localStorage 读取场景设置并与默认值合并：
+ * - 缺失 / 多余字段回退默认值，容忍旧版本持久化数据结构变化
+ * - 解析失败（损坏 JSON / localStorage 不可用）时回退默认值
+ */
+function loadScenarioSettings(): ScenarioSettingsValue {
+  try {
+    const raw = localStorage.getItem(SCENARIO_SETTINGS_STORAGE_KEY);
+    if (!raw) {
+      return DEFAULT_SCENARIO_SETTINGS;
+    }
+    const parsed = JSON.parse(raw) as Partial<ScenarioSettingsValue>;
+    return {
+      ...DEFAULT_SCENARIO_SETTINGS,
+      ...parsed,
+      features: Array.isArray(parsed.features) ? parsed.features : [],
+    };
+  } catch {
+    return DEFAULT_SCENARIO_SETTINGS;
+  }
+}
+
 export default function Calculator() {
   const { t, i18n } = useTranslation();
   const locale = normalizeLocale(i18n.language);
@@ -56,9 +82,8 @@ export default function Calculator() {
   const [data, setData] = useState<AllTheMonsData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
-  const [scenarioSettings, setScenarioSettings] = useState<ScenarioSettingsValue>(
-    DEFAULT_SCENARIO_SETTINGS,
-  );
+  const [scenarioSettings, setScenarioSettings] =
+    useState<ScenarioSettingsValue>(loadScenarioSettings);
 
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -66,6 +91,23 @@ export default function Calculator() {
   const updateScenarioSettings = useCallback((patch: Partial<ScenarioSettingsValue>) => {
     setScenarioSettings((current) => ({ ...current, ...patch }));
   }, []);
+
+  /** 重置场景设置为默认值 */
+  const resetScenarioSettings = useCallback(() => {
+    setScenarioSettings(DEFAULT_SCENARIO_SETTINGS);
+  }, []);
+
+  // 场景设置变化时持久化到 localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        SCENARIO_SETTINGS_STORAGE_KEY,
+        JSON.stringify(scenarioSettings),
+      );
+    } catch {
+      // 序列化 / 写入失败时忽略，仅影响下次进入的恢复
+    }
+  }, [scenarioSettings]);
 
   useEffect(() => {
     loadAllTheMonsData()
@@ -328,8 +370,21 @@ export default function Calculator() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t("scenario.title")}</CardTitle>
-          <CardDescription>{t("scenario.description")}</CardDescription>
+          <div className="flex items-start justify-between gap-2">
+            <div className="space-y-1.5">
+              <CardTitle>{t("scenario.title")}</CardTitle>
+              <CardDescription>{t("scenario.description")}</CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 shrink-0 gap-1.5 px-3"
+              onClick={resetScenarioSettings}
+            >
+              <RotateCcwIcon className="size-3.5" />
+              {t("scenario.reset")}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <ScenarioSettings
